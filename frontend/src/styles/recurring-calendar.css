@@ -253,3 +253,7 @@
     flex-basis: 44px;
   }
 }
+.paused-schedule-help {
+  display: block;
+  margin-top: 0.75rem;
+}

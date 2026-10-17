@@ -3,6 +3,20 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.14.1 verification
+
+372 tests in forty-three files pass, including all prior import, ledger, reminder and counted-schedule checks.
+
+New regression tests exercise missing SubtleCrypto in self-hosted and demo deletion, including read-only review,
+exact consent, stale preferences, concurrent-tab changes and successful deletion with the server confirmation payload.
+Workspace restore and Actual merge reject changed source/destination data and complete using the fallback.
+Fallback output matches native SHA-256 for padding/block boundaries, empty input, Unicode and the standard million-a
+vector. Native hashing failures still reject rather than approving an operation. A UI test explicitly resumes a paused
+rule, verifies the help text and enabled Mark paid, and confirms that no payment is automatically recorded.
+
+No real user data is deleted or resumed. All test ledgers are fictional. No schema/dependency or supplied Dockerfile
+changes. Browser visual, Raspberry Pi/Docker and real notification delivery checks remain unexecuted.
+
 ## Version 1.14 verification
 
 352 tests in forty-one files pass, including all existing delete/overwrite, import, ledger and reminder checks.

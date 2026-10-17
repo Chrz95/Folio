@@ -1,3 +1,14 @@
+# Folio 1.14.1
+
+- **LAN HTTP deletion:** use native SHA-256 when available and a compatible fallback when `crypto.subtle` is absent.
+  Exact typed DELETE, explicit acknowledgment, stale-state checks and atomic persistence remain required.
+- **Import reviews:** Actual and workspace browser reviews share the fix, retaining unchanged SHA-256 revisions.
+- **Paused imports:** Recurring explains why imported schedules start paused and how to resume them. Dates remain
+  visible; reminders and Mark paid stay disabled until resumed. The update leaves existing pause choices unchanged.
+- **Deployment:** 1.14.1 images; supplied Dockerfile, ports, schema and dependencies unchanged.
+
+372 tests in forty-three files pass. See VALIDATION for executed checks and verification limits.
+
 # Folio 1.14
 
 - **Icon controls:** Edit, Mark paid and Skip use compact icon buttons with accessible names, titles and keyboard

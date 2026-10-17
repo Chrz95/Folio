@@ -3,6 +3,7 @@ import { APP } from '../../constants/app.constants';
 import { PWA } from '../../pwa/pwa.constants';
 import { REMINDER_STORAGE, REMINDER_EVENT } from '../reminders/reminders.constants';
 import { request } from '../../lib/api/client';
+import { sha256 } from '../../lib/sha256';
 import { readDemo, writeDemo } from '../../lib/storage/demoStore';
 import { BACKUP } from './backup.constants';
 import { workspaceCanonical } from './workspaceImportPlan';
@@ -20,10 +21,7 @@ function localState(): string {
 /** Bind deletion to this browser's exact Folio data and preferences without retaining raw private values.
  * @returns {Promise<string>} SHA-256 revision. */
 async function localRevision(): Promise<string> {
-  const bytes = new TextEncoder().encode(localState());
-  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
-  const hex = { radix: 16, width: 2 };
-  return [...hash].map((byte) => byte.toString(hex.radix).padStart(hex.width, '0')).join('');
+  return sha256(localState());
 }
 /** Preview owned data only; no deletion or subscription changes occur here.
  * @returns {Promise<DeletionReview>} Private-value-free summary. */

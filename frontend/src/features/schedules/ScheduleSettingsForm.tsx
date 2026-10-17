@@ -30,6 +30,7 @@ export function ScheduleSettingsForm({ template, settings }: SettingsProps) {
         />
         Pause this schedule
       </label>
+      {isPaused && <small>Dates stay visible while paused. Reminders and Mark paid are disabled.</small>}
       <label>
         Last allowed payment date
         <input

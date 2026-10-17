@@ -7,6 +7,9 @@ const WEEKS_PER_YEAR = 52;
  * @returns {JSX.Element} Active recurring expense summary. */
 export function RecurringSummary() {
   const { data } = useWorkspace();
+  const pausedCount = data.recurring.filter((entry) =>
+    data.scheduleSettings?.some((control) => control.recurringId === entry.id && control.isPaused),
+  ).length;
   const activeExpenses = data.recurring.filter((entry) => {
     const settings = data.scheduleSettings?.find((control) => control.recurringId === entry.id);
     return (
@@ -40,6 +43,13 @@ export function RecurringSummary() {
         Across {activeExpenses.length} recurring expenses.
         <br />
         Normalized monthly rate. Individual skips are reflected in forecasts.
+        {pausedCount > 0 && (
+          <span className="paused-schedule-help">
+            {pausedCount} paused. Imported schedules start paused: dates stay visible, but reminders and Mark paid are
+            disabled. To resume, open Schedule controls, clear Pause this schedule, then Save schedule controls.
+            Resuming includes overdue unpaid dates.
+          </span>
+        )}
       </p>
       <Bell
         size={28}

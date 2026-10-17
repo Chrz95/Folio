@@ -1,5 +1,6 @@
 import { environment } from '../../app/config/environment';
 import { request } from '../../lib/api/client';
+import { sha256 } from '../../lib/sha256';
 import { APP } from '../../constants/app.constants';
 import { readDemo, writeDemo } from '../../lib/storage/demoStore';
 import { actualInputSchema, actualCommitSchema } from './actualSchema';
@@ -10,10 +11,7 @@ import { ACTUAL } from './actual.constants';
 /** Bind a review to the exact source and destination. @param {unknown} value - Snapshot pair.
  * @returns {Promise<string>} SHA-256 revision. */
 async function digest(value: unknown) {
-  const bytes = new TextEncoder().encode(canonical(value));
-  return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
-    .map((byte) => byte.toString(ACTUAL.hexRadix).padStart(ACTUAL.hexDigits, '0'))
-    .join('');
+  return sha256(canonical(value));
 }
 /** Enforce the same request size as the API before sending normalized fields.
  * @param {unknown} value - Validated body. @returns {string} Bounded JSON. */

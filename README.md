@@ -4,6 +4,22 @@ A calm, manual budget manager for everyday finances. Track income, expenses and 
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
 
+## Version 1.14.1: local HTTP deletion and paused schedules
+
+Delete-all now works when the browser does not expose `crypto.subtle`, including LAN HTTP deployments. The same
+SHA-256 review revision is calculated with a browser-compatible fallback, retaining exact `DELETE`, acknowledgment,
+stale-state checks and the server-side transaction. Actual and workspace review/import use the same fallback.
+No HTTPS setting or browser security override is needed for deletion. Push notifications still require a secure context.
+
+All newly imported schedules start **paused**, both for Actual imports and Folio workspace restores. A pause leaves
+dates visible but disables reminders and Mark paid; it also excludes the schedule from active forecasts/expense rates.
+To resume one, open **Recurring → Schedule controls**, clear **Pause this schedule**, then **Save schedule controls**.
+Resuming includes overdue unpaid dates, so review the dates and skip any that should not be recorded. Pausing/resuming
+does not change posted transactions. The Recurring summary and schedule form now explain this state and the next step.
+Existing paused schedules are not automatically resumed by this update.
+
+Rebuild/push the images as **1.14.1** and redeploy with the existing volume. No schema or dependency changes are needed.
+
 ## Version 1.14: icon actions and custom repetition counts
 
 Edit, Mark paid and Skip this occurrence now use pencil, check and skip icons. Accessible names, hover titles,
@@ -33,7 +49,7 @@ Recurring POST/PUT payloads now optionally accept `repetitions` and `countFrom` 
 calendar range and inclusive endings; omission of all ending fields preserves existing API behavior. Returned/stored
 recurring rows do not include these temporary mutation fields; `/schedules` remains the persisted control boundary.
 
-Rebuild/push frontend, backend and migrate images as **1.14.0**, then pull/up with the existing Compose project/volume.
+Rebuild/push frontend, backend and migrate images as **1.14.1**, then pull/up with the existing Compose project/volume.
 The supplied Dockerfile and host ports 8081/5001 are unchanged. The delete-all and overwrite-import features remain
 included from 1.13. Browser visuals and Docker/ARM64 execution remain unverified here.
 
@@ -248,8 +264,8 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.14.0 \
-    -t "192.168.1.11:5000/folio-${target}:1.14.0" \
+    --build-arg VERSION=1.14.1 \
+    -t "192.168.1.11:5000/folio-${target}:1.14.1" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```
@@ -260,7 +276,7 @@ On the Pi, if keys have not already been configured, generate a new private file
 ```bash
 docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
   --volume "$PWD:/keys" \
-  192.168.1.11:5000/folio-backend:1.14.0 \
+  192.168.1.11:5000/folio-backend:1.14.1 \
   backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
 ```
 

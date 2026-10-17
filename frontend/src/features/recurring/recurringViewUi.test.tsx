@@ -80,6 +80,27 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('calendar states and default recurring table', () => {
+  it('explains paused imports and enables confirmation after an explicit resume', async () => {
+    const data = fixture();
+    data.recurring = [rule(1, 'Imported bill', '2026-10-17')];
+    data.scheduleSettings = [{ recurringId: data.recurring[0]!.id, isPaused: true, endDate: null }];
+    writeDemo(data);
+    render(
+      <Harness>
+        <RecurringPage />
+      </Harness>,
+    );
+    await screen.findByText(/1 paused\. Imported schedules start paused/);
+    expect(screen.getByRole('button', { name: 'Mark paid' })).toBeDisabled();
+    fireEvent.click(screen.getByText('Schedule controls · 0 skipped'));
+    expect(screen.getByText('Dates stay visible while paused. Reminders and Mark paid are disabled.')).toBeVisible();
+    fireEvent.click(screen.getByLabelText('Pause this schedule'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save schedule controls' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark paid' })).toBeEnabled());
+    expect(screen.queryByText(/1 paused\. Imported schedules start paused/)).not.toBeInTheDocument();
+    expect(readDemo().transactions).toEqual([]);
+    expect(readDemo().scheduleSettings?.[0]?.isPaused).toBe(false);
+  });
   it('shows all weekly instances and turns the selected occurrence green exactly once after confirmation', async () => {
     const data = fixture();
     data.recurring = [{ ...rule(1, 'Weekly bill', '2026-10-03'), frequency: 'weekly' }];

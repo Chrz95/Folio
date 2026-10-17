@@ -1,6 +1,7 @@
 import { environment } from '../../app/config/environment';
 import { APP } from '../../constants/app.constants';
 import { request } from '../../lib/api/client';
+import { sha256 } from '../../lib/sha256';
 import { readDemo, writeDemo } from '../../lib/storage/demoStore';
 import { workspaceSchema } from './backupSchema';
 import type { RestorableWorkspace } from './backupSchema';
@@ -11,11 +12,7 @@ import type { WorkspaceImportReview } from './workspaceImportPlan';
 /** Hash the exact financial state and effective import. @param {unknown} value - Snapshot pair.
  * @returns {Promise<string>} SHA-256 review identity. */
 async function revisionFor(value: unknown) {
-  const hex = { radix: 16, width: 2 };
-  const bytes = new TextEncoder().encode(workspaceCanonical(value));
-  return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
-    .map((byte) => byte.toString(hex.radix).padStart(hex.width, '0'))
-    .join('');
+  return sha256(workspaceCanonical(value));
 }
 /** Enforce the JSON body boundary before making a network request. @param {unknown} input - Contract.
  * @returns {string} Bounded serialized payload. */
