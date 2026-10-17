@@ -4,6 +4,50 @@ A calm, manual budget manager for everyday finances. Track income, expenses and 
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
 
+## Version 1.10.2: source-aware import review
+
+The import page now separates source compatibility from selected scope: supported/total schedules, selected schedules,
+schedules with final payment dates and exact historical matches. Turning schedules off no longer looks like a decoder
+failure. The page shows **Actual importer 1.10.2** so an old image or cached frontend is easy to identify.
+
+Off-date source-linked payments keep their original recorded dates and amounts. Compatibility notes now count and
+identify payments kept as ordinary postings. These do not mark a planned date paid in Folio. When adding schedules to an
+older import, the review also counts existing unlinked postings that remain unchanged. Resolve those past planned dates
+before enabling reminders; re-import never rewrites financial history to make a schedule appear paid.
+
+In **Recurring → Schedule controls → Planned date to skip**, enter the original planned date already covered by a
+recorded payment, then choose **Skip planned date**. This works while the schedule is paused. It suppresses that planned
+date in calendar/forecast/reminder planning, preserves the recorded payment, validates occurrence membership and is
+reversible with Restore. Review the skip list and then resume the schedule. No duplicate transaction is needed.
+
+A supplied native export was verified locally through real file-backed SQLite import, reopen and repeat import.
+All 15 schedules and 16 postings persist, all six installment end dates survive, both account balances reconcile and
+re-import adds zero rows. The existing 1.10.1 parser already accepts all its schedules. The new review makes three
+source-linked off-date payments explicit. Published code/tests use fictional data; the private export is never seeded
+into the hosted preview or included in source/deployment packages.
+
+Build/push the **1.10.2** frontend, backend and migrate images, then pull/up using the same Compose project and SQLite
+volume. The supplied Dockerfile, ports 8081/5001, persistent schema and dependencies are unchanged.
+
+## Version 1.10.1: Actual editor schedule compatibility
+
+Actual's recurrence editor writes inactive `endDate`/`endOccurrences` fields even on schedules that never end, and
+stores ordinary monthly dates as a single `day` pattern. The importer previously rejected these standard fields and
+replaced the error with a generic message. It now reads these defaults, imports single monthly day patterns from 1–28,
+normalizes the first matching date on or after the source start, and converts counted endings to exact inclusive end
+dates. Weekly/yearly rules ignore inactive monthly patterns as Actual does. Estimates still require review and every
+imported schedule starts paused. No financial history is rewritten.
+
+Reload the updated app and choose the original ZIP again. The upload panel must show **Actual importer 1.10.2**.
+If any schedule is still excluded, its reason now identifies the precise condition, action or date field. Expand the
+exclusion list and choose **Download schedule diagnostics**: this local JSON contains only failed schedule definitions
+(names, amounts, dates, rule fields and source identifiers), not transaction history, account balances or credentials.
+Review it before sharing. You can obtain it before currency consent or import; oversized rules are explicitly omitted.
+
+This patch preserves the supplied Dockerfile and existing database schema. Build/push frontend, backend and migrate
+images tagged **1.10.2**, then pull/up using the same Compose project and SQLite volume. Both frontend and backend must
+be updated because the review payload now permits optional schedule diagnostics. Ports stay 8081/5001.
+
 ## Version 1.10: compact checkboxes and recurring Actual imports
 
 Checkboxes now use compact 20-pixel native controls. Text-field padding, full-width sizing and 44-pixel field height
@@ -23,7 +67,7 @@ fields still cause a conflict. Review past dates before resuming: previously unl
 Unsupported recurrence semantics remain explicitly listed with reasons; see the compatibility table below.
 
 The supplied `Dockerfile(1)` is used as `Dockerfile`, byte-for-byte. It already matched the previous Dockerfile.
-Registry Compose now defaults to image tag **1.10.0**, retaining host ports **8081/5001** and the existing SQLite volume.
+Registry Compose now defaults to image tag **1.10.2**, retaining host ports **8081/5001** and the existing SQLite volume.
 Rebuild and push frontend, backend and migrate targets before pulling this version on the Pi. No database migration
 or new dependency is required. Docker/ARM64 execution and browser visual checks remain unverified here.
 
@@ -90,8 +134,8 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.10.0 \
-    -t "192.168.1.11:5000/folio-${target}:1.10.0" \
+    --build-arg VERSION=1.10.2 \
+    -t "192.168.1.11:5000/folio-${target}:1.10.2" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```
@@ -102,7 +146,7 @@ On the Pi, if keys have not already been configured, generate a new private file
 ```bash
 docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
   --volume "$PWD:/keys" \
-  192.168.1.11:5000/folio-backend:1.10.0 \
+  192.168.1.11:5000/folio-backend:1.10.2 \
   backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
 ```
 
@@ -162,8 +206,8 @@ available distinct accounts. Exact and approximate date conditions share the sou
 tolerance is not recreated. Exact and approximate amounts use the source value; same-sign nonzero ranges use the signed
 rounded midpoint. Estimates and range endpoints remain in the schedule notes and complete review download.
 
-Only interval-one rules without patterns or weekend shifting, and with no end or an explicit inclusive end date, are
-supported. Daily/custom intervals, month-end/leap-day rules, counted endings, missing accounts, zero/cross-zero amount
+Supported rules use interval one, no patterns or a single monthly day from 1–28, and no weekend shifting.
+They may repeat indefinitely, end on an inclusive date or stop after up to 5,000 payments. Daily/custom intervals, month-end/leap-day rules, missing accounts, zero/cross-zero amount
 ranges, extra conditions and complex/template/formula actions are excluded with reasons. Plain set actions must leave
 the scheduled account, payee and amount unchanged. This preserves the source semantics rather than inventing dates.
 Historical schedule links are retained only for matching exact dates, amounts, types and account legs. Other history

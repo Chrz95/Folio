@@ -1,4 +1,5 @@
 import type { ActualFile } from './actualSchema';
+import { downloadScheduleDiagnostics } from './actualScheduleDiagnostics';
 import { ACTUAL } from './actual.constants';
 /** Make unsupported semantics explicit before committing. @param {ActualFile} file - Decoded compatibility report.
  * @returns {JSX.Element} Warnings and bounded exclusion detail. */
@@ -35,6 +36,13 @@ export function ActualCompatibility({ file }: { file: ActualFile }) {
             ))}
           </ul>
           <p>The complete list is included in the review download.</p>
+          <button
+            className="button secondary"
+            onClick={() => downloadScheduleDiagnostics(file)}
+          >
+            Download schedule diagnostics
+          </button>
+          <p>Contains failed schedule names, amounts, dates and rule fields. No transaction history is included.</p>
         </details>
       )}
     </section>

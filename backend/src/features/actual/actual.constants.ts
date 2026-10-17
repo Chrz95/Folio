@@ -1,5 +1,6 @@
 /** Native archive limits and stable import identity; no Actual credentials are used. */
 export const ACTUAL = {
+  diagnosticBytes: 16 * 1024,
   weekMilliseconds: 604800000,
   requiredConditions: 4,
   hexRadix: 16,

@@ -104,6 +104,51 @@ describe('schedule controls across the preview', () => {
     expect(outcomes().dates).toHaveLength(1);
     expect(readDemo().transactions).toHaveLength(0);
   });
+  it('prepares a paused schedule for an off-date payment, preserving history and validating dates', async () => {
+    const data = fixture();
+    data.scheduleSettings = [{ recurringId, isPaused: true, endDate: null }];
+    data.transactions = [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: 'Recorded elsewhere',
+        amount: 10000,
+        type: 'expense',
+        category: 'Housing',
+        accountId,
+        destinationAccountId: null,
+        date: '2026-10-15',
+        notes: 'Original note',
+        createdAt: 1,
+        recurringId: null,
+      },
+    ];
+    writeDemo(data);
+    render(
+      <Harness>
+        <RecurringPage />
+      </Harness>,
+    );
+    fireEvent.click(await screen.findByText('Schedule controls · 0 skipped'));
+    expect(screen.getByRole('button', { name: 'Skip planned date' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Planned date to skip'), { target: { value: '2026-10-17' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Skip planned date' }));
+    await screen.findByText('Choose a date in this recurring schedule.');
+    expect(readDemo().skippedOccurrences ?? []).toHaveLength(0);
+    fireEvent.change(screen.getByLabelText('Planned date to skip'), { target: { value: '2026-10-16' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Skip planned date' }));
+    await screen.findByText('Schedule controls · 1 skipped');
+    expect(readDemo().scheduleSettings?.[0]?.isPaused).toBe(true);
+    expect(readDemo().transactions).toEqual(data.transactions);
+    fireEvent.click(screen.getByLabelText('Pause this schedule'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save schedule controls' }));
+    await waitFor(() => expect(readDemo().scheduleSettings?.[0]?.isPaused).toBe(false));
+    expect(outcomes().dates).toHaveLength(0);
+    expect(outcomes().reminders).toHaveLength(0);
+    expect(readDemo().transactions).toEqual(data.transactions);
+    fireEvent.click(screen.getByRole('button', { name: 'Restore skipped 2026-10-16' }));
+    await waitFor(() => expect(readDemo().skippedOccurrences).toHaveLength(0));
+    expect(outcomes().dates).toHaveLength(1);
+  });
   it('skips one date, removes it from the calendar, forecast and reminders, then restores it', async () => {
     render(
       <Harness>

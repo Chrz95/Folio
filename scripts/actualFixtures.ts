@@ -88,3 +88,92 @@ export function actualZipFixture(directory: string, source = actualFixture(), pr
     [`${prefix}metadata.json`]: strToU8(JSON.stringify({ id: 'fixture-budget', budgetName: 'Fixture budget' })),
   });
 }
+/** Reproduce Actual's recurrence editor serialization, including inactive ending fields and monthly day patterns.
+ * @returns {ActualSource} Fictional ledger with the source editor's default rule shape. */
+export function actualEditorFixture(): ActualSource {
+  const source = actualFixture();
+  const rule = source.rules[0]!;
+  rule.conditions = JSON.stringify([
+    { op: 'is', field: 'account', value: 'bank' },
+    { op: 'is', field: 'payee', value: 'shop' },
+    {
+      op: 'isapprox',
+      field: 'date',
+      value: {
+        start: '2026-10-03',
+        frequency: 'monthly',
+        interval: 1,
+        patterns: [{ type: 'day', value: 3 }],
+        skipWeekend: false,
+        weekendSolveMode: 'before',
+        endMode: 'never',
+        endOccurrences: 1,
+        endDate: '2026-10-17',
+      },
+    },
+    { op: 'isapprox', field: 'amount', value: -300 },
+  ]);
+  return source;
+}
+/** Fictional migration sample covering observed rule shapes without copying uploaded names, amounts or identifiers.
+ * @returns {ActualSource} Fifteen schedules, six installment endings and sixteen postings, three off the anchor date. */
+export function actualMigrationFixture(): ActualSource {
+  const source = actualFixture();
+  source.transactions = [];
+  source.schedules = [];
+  source.rules = [];
+  source.zero_budgets = [];
+  const counts = [2, 3, 5, 7, 9, 12];
+  for (let index = 0; index < 15; index += 1) {
+    const id = `sample-schedule-${index}`;
+    const day = index + 3;
+    const account = index % 2 ? 'save' : 'bank';
+    const amount = index === 14 ? 200000 : -(index + 1) * 250;
+    const start = `2032-03-${String(day).padStart(2, '0')}`;
+    const conditions = [
+      { op: 'is', field: 'description', value: 'shop' },
+      { op: 'is', field: 'acct', value: account },
+      {
+        op: 'isapprox',
+        field: 'date',
+        value: {
+          start,
+          frequency: 'monthly',
+          ...(index === 14 ? {} : { interval: 1 }),
+          patterns: [],
+          skipWeekend: false,
+          weekendSolveMode: 'after',
+          endMode: index < counts.length ? 'after_n_occurrences' : 'never',
+          endOccurrences: counts[index] ?? 1,
+          endDate: '2032-02-01',
+        },
+      },
+      { op: index === 3 ? 'is' : 'isapprox', field: 'amount', value: amount },
+    ];
+    const rotation = index % conditions.length;
+    source.schedules.push({
+      id,
+      name: `Δοκιμαστικό ${index + 1}`,
+      rule: `${id}-rule`,
+      posts_transaction: index === 2 ? 1 : 0,
+    });
+    source.rules.push({
+      id: `${id}-rule`,
+      conditions_op: 'and',
+      conditions: JSON.stringify([...conditions.slice(rotation), ...conditions.slice(0, rotation)]),
+      actions: JSON.stringify([{ op: 'link-schedule', value: id }]),
+    });
+    source.transactions.push({
+      id: `sample-posting-${index}`,
+      schedule: id,
+      acct: account,
+      amount,
+      description: 'shop',
+      category: 'food',
+      date: 20320300 + day + (index < 3 ? 1 : 0),
+      cleared: 1,
+    });
+  }
+  source.transactions.push({ ...source.transactions[14]!, id: 'sample-following-month', date: 20320417 });
+  return source;
+}

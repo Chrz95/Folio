@@ -134,6 +134,8 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
   }
   const balances = new Map(accounts.map((row) => [row.id, 0]));
   let zeroRows = 0;
+  let unmatchedSchedulePayments = 0;
+  const unmatchedPaymentExamples: string[] = [];
   for (const row of source.transactions) {
     if (row.isParent === 1) {
       continue;
@@ -214,6 +216,15 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
       posting.recurringId = schedule.id;
       linkedDates.add(paidKey);
     }
+    if ((row.schedule || parent?.schedule || paired?.schedule) && !posting.recurringId) {
+      unmatchedSchedulePayments += 1;
+      if (unmatchedPaymentExamples.length < ACTUAL.previewRows) {
+        const expected = schedule ? `${schedule.name} (${schedule.frequency}, starts ${schedule.date})` : 'source rule';
+        unmatchedPaymentExamples.push(
+          `Unlinked payment: ${posting.name} recorded on ${posting.date}; scheduled by ${expected}.`,
+        );
+      }
+    }
     if (row.cleared === 1 || row.reconciled === 1) {
       clearances.push({ transactionId: id, accountId, reconciliationId: null });
     }
@@ -261,6 +272,17 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
       'Approximate amounts become fixed estimates; ranges use a rounded midpoint. Review notes before resuming.',
       'Date matching tolerance and source auto-posting are not enabled. Unsupported schedules are listed below.',
       'Existing historical postings keep their schedule links when importing newly supported schedules.',
+      ...(unmatchedSchedulePayments
+        ? [
+            `Source-linked payments kept as ordinary transactions: ${unmatchedSchedulePayments}. ` +
+              'Their original dates and amounts are preserved. They do not mark planned dates paid in Folio; ' +
+              'review or skip those dates before resuming reminders.',
+          ]
+        : []),
+      ...unmatchedPaymentExamples,
+      ...(unmatchedSchedulePayments > unmatchedPaymentExamples.length
+        ? ['Additional unlinked payments are present. Check source schedule links before resuming reminders.']
+        : []),
       'Long or duplicate category names receive stable suffixes; original names are included in the review.',
       'Tags, rule automation, reports, attachments, goal formulas and carryover are not imported.',
       `${zeroRows} zero-value postings excluded; ` +

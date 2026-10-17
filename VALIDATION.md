@@ -3,6 +3,72 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.10.2 verification
+
+The supplied native ZIP was decoded locally with SQL.js and imported into a new disposable, migrated SQLite database.
+The existing 1.10.1 parser already accepts every supplied schedule. All 15 schedules and 16 postings persist exactly,
+all six installment end dates and paused controls survive reopen, both account balances reconcile, repeat review/commit
+adds no rows and SQLite integrity passes. Adding schedules to a legacy import preserves postings and balances.
+The source ZIP checksum is unchanged. Temporary databases are cleaned up; no runtime user database is used.
+
+Thirteen historical payments match exact dates and amounts. Three source-linked payments have off-anchor recorded
+dates; these remain unchanged ordinary postings. The new warnings identify them before reminder activation. A legacy
+import with all links omitted retains its postings and exposes the 13 otherwise matchable links it intentionally leaves
+unchanged. The normalized financial data hash is identical before and after the review improvements.
+
+The compiled production HTTP server was also run on a separate migrated temporary SQLite database. Actual exported
+data passed read-only review, atomic 15-schedule/16-posting commit, six paused installment endings, repeat preview/commit,
+reopened persistence and graceful shutdown. Its signing keys were disabled and its database had no subscriptions.
+No push provider was contacted. The process and temporary database were removed after the check.
+
+284 tests in thirty-four files pass. A fictional mixed-shape native fixture uses alternate condition ordering,
+legacy aliases, omitted interval, inactive old ending dates, six distinct installment endings, an auto-post source flag,
+approximate/fixed amounts and off-anchor history. No uploaded names, amounts, identifiers or notes are copied.
+UI tests distinguish supported/total schedules from selected scope, display end-date/payment counts and legacy warnings,
+require acknowledgment and preserve all existing postings while adding schedules. Paused skip preparation validates
+membership, preserves recorded history, remains paused until explicitly resumed, suppresses reminders afterward and
+supports restoration. Existing malformed/unsupported rule tests and all ledger/workspace/reminder checks remain green.
+
+Strict frontend/backend/worker types, zero-warning lint, named-source JSDoc, formatting, source/component bounds,
+production/demo builds and native-worker/WASM/PWA artifacts are checked. The supplied Dockerfile remains unchanged;
+Compose defaults to 1.10.2 with ports 8081/5001 and the existing volume layout. No migration or dependency is added.
+
+Private ZIP contents and temporary normalized/database data are excluded from source and deployment packages. Only
+fictional fixtures and aggregate verification results are retained in the repository. The published preview keeps its
+existing demonstration seed. Browser visuals, Docker/ARM64 runtime and live device delivery remain unverified.
+
+## Version 1.10.1 verification
+
+280 tests in thirty-four files pass. A real native SQLite ZIP contains 15 fictional Greek-labeled schedules using
+Actual's editor-created rule format, including ordinary monthly `day` patterns, inactive ending fields, approximate
+amounts and an income schedule. All 15 import paused with exact source balances and a duplicate-free repeat import.
+The fixture shape was checked against Actual's primary RecurringSchedulePicker and useScheduleEdit source, which save
+`endOccurrences: 1` and `endDate` even for `endMode: never`.
+
+Additional cases verify first matching month days, year rollover, counted weekly/monthly/yearly endings including a
+single payment, inactive ending/pattern fields, active end-date validation, bounded positive counts, no-effect options
+and continued rejection of unsupported rule semantics. Bad fields identify their path instead of a generic message;
+bounded diagnostics retain the failed source definitions and explicitly omit oversized rule contents.
+
+File-backed SQLite HTTP coverage verifies read-only review and committed installment settings after reopen. The UI
+permits diagnostics before any import or currency consent, downloads parsed rule arrays without financial history, and
+identifies the importer version. The native decoder, entire existing ledger/workspace/reminder suite, strict frontend/
+backend/worker types, zero-warning lint, named-source JSDoc and component/source limits remain checked.
+
+A separately migrated disposable SQLite database also ran the compiled production server over real HTTP. An older
+import without schedules was upgraded using Actual editor defaults and a six-payment ending: read-only review,
+unchanged historical postings, atomic addition, paused controls, the exact final date, repeat detection, reopened
+persistence and graceful HTTP/SQLite shutdown all passed. Its process and temporary database were cleaned up.
+
+The user's source rule definitions have not been provided. Compatibility with their exact 15 schedules is therefore
+not claimed verified. Unsupported intervals, weekend shifts, multi-day/weekday patterns and month-end/leap-day date
+policies remain explicit exclusions. Diagnostics give a targeted next step without requesting the entire budget.
+
+The Dockerfile remains an exact copy of the supplied attachment; registry tags are 1.10.1 with host ports 8081/5001.
+No schema migration or dependency addition is required. Production and demo frontend/backend builds and offline
+native-worker/WASM/PWA artifacts are checked. Browser visuals, Docker/ARM64 execution and live device delivery remain
+unverified. Integration checks use isolated temporary SQLite files, not host runtime financial data.
+
 ## Version 1.10 verification
 
 250 tests in thirty-three files pass. New native ZIP tests build and close real source SQLite files before decoding

@@ -12,7 +12,7 @@ import { createLogger } from '../../lib/logger/logger.js';
 import { accounts, transactions, recurring } from '../../db/schema/budget.js';
 import { receipts } from '../../db/schema/receipts.js';
 import { scheduleSettings } from '../../db/schema/schedules.js';
-import { actualFixture } from '../../../../scripts/actualFixtures';
+import { actualFixture, actualEditorFixture } from '../../../../scripts/actualFixtures';
 import { convertActual } from '../../../../frontend/src/features/actual/convertActual';
 const settings = parseDatabaseEnvironment();
 const accountId = '11111111-1111-4111-8111-111111111111';
@@ -132,6 +132,7 @@ describe('atomic native Actual import API on file-backed SQLite', () => {
     const before = postings();
     const preview = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
     expect(preview.added).toMatchObject({ transactions: 0, recurring: 1, scheduleSettings: 1 });
+    expect(preview.preservedUnlinkedPayments).toBe(1);
     expect(postings()).toEqual(before);
     await request(app())
       .post(`${path}/commit`)
@@ -146,6 +147,43 @@ describe('atomic native Actual import API on file-backed SQLite', () => {
     expect(client.database.select().from(recurring).all()[0]!.notes).toContain('fixed estimate');
     const repeated = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
     expect(Object.values(repeated.added).every((count) => count === 0)).toBe(true);
+  });
+  it('persists counted editor schedules and accepts field diagnostics', async () => {
+    const source = actualEditorFixture();
+    const conditions = JSON.parse(String(source.rules[0]!.conditions));
+    conditions[2].value.endMode = 'after_n_occurrences';
+    conditions[2].value.endOccurrences = 6;
+    source.rules[0]!.conditions = JSON.stringify(conditions);
+    const converted = convertActual(source, JSON.stringify({ id: 'editor-api' }));
+    const current = {
+      file: {
+        ...converted,
+        exclusions: [
+          {
+            id: 'unsupported',
+            name: 'Example',
+            reason: 'Schedule date.interval: expected 1',
+            diagnostic: JSON.stringify({ interval: 2 }),
+          },
+        ],
+      },
+      currencyConfirmed: true,
+    };
+    const before = postings();
+    const preview = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    expect(preview.added.recurring).toBe(1);
+    expect(postings()).toEqual(before);
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...current, revision: preview.revision })
+      .expect(200);
+    client.sqlite.close();
+    client = openDatabase({ filePath: resolve(directory, 'app.sqlite'), busyTimeout: 0 });
+    expect(client.database.select().from(scheduleSettings).all()[0]).toMatchObject({
+      isPaused: true,
+      endDate: '2027-03-03',
+    });
+    expect(client.database.select().from(recurring).all()[0]!.date).toBe('2026-10-03');
   });
   it('rejects stale reviews after a destination edit and forged revisions without partial writes', async () => {
     const preview = await review();

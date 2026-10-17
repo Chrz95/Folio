@@ -57,7 +57,16 @@ export const actualFileSchema = z
     balances: z.array(z.object({ accountId: z.uuid(), amount: z.number().int().safe() }).strict()).max(ACTUAL.accounts),
     warnings: z.array(z.string().max(ACTUAL.notes)).max(ACTUAL.entries),
     exclusions: z
-      .array(z.object({ id: z.string().max(ACTUAL.name), name, reason: z.string().max(ACTUAL.notes) }).strict())
+      .array(
+        z
+          .object({
+            id: z.string().max(ACTUAL.name),
+            name,
+            reason: z.string().max(ACTUAL.notes),
+            diagnostic: z.string().max(ACTUAL.diagnosticBytes).optional(),
+          })
+          .strict(),
+      )
       .max(ACTUAL.rows),
   })
   .strict();

@@ -1,3 +1,30 @@
+# Folio 1.10.2
+
+- **Source review:** supported/total schedules, selected scope, final payment dates and exact historical matches remain
+  distinct. The importer version is visible; toggling scope cannot masquerade as an unsupported schedule.
+- **Payment warnings:** identify source-linked payments kept on their original dates as ordinary transactions and count
+  older imported postings whose null schedule links remain unchanged. Financial values are preserved.
+- **Paused preparation:** skip a planned date before resuming a migrated schedule, retaining recorded history. Invalid
+  occurrence dates reject and every skip can be restored.
+- **Real export verification:** all 15 schedules, 16 postings and six installment endings persist; both balances reconcile
+  and repeat/legacy-upgrade checks pass. Private source data stays outside published source and preview seed data.
+- **Deployment:** image tag 1.10.2, exact supplied Dockerfile and ports 8081/5001; no schema or dependency change.
+
+284 tests in thirty-four files pass. See VALIDATION for executed checks and verification limits.
+
+# Folio 1.10.1
+
+- **Actual editor defaults:** accept inactive ending fields and ordinary single monthly day patterns instead of rejecting
+  standard editor-created schedules. Weekly/yearly rules tolerate inactive monthly patterns; first dates remain faithful.
+- **Installments:** convert a supported counted ending into an inclusive final date, retaining paused controls.
+- **Useful diagnostics:** exclusions identify exact rule fields; an explicit local download contains failed schedule
+  definitions and no transaction history. Visible importer version identifies stale frontend/worker deployments.
+- **Deployment:** image tag 1.10.1, unchanged supplied Dockerfile, ports 8081/5001 and no database migration/dependency change.
+
+280 tests pass in thirty-four files, including a real native ZIP with 15 fictional editor-created schedules, exact
+counted endings, reopened SQLite persistence, field-specific failures and a no-import diagnostics download.
+The user's own source rules were not supplied; importing all of their schedules cannot yet be claimed verified.
+
 # Folio 1.10
 
 - **Compact checkboxes:** native 20-pixel controls no longer inherit text input padding, minimum field heights or

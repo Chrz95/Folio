@@ -1,5 +1,6 @@
 import { useWorkspace } from '../../app/WorkspaceContext';
 import type { RecurringTransaction } from '../../types/budget';
+import { SkipPlannedDateForm } from './SkipPlannedDateForm';
 import { ScheduleSettingsForm } from './ScheduleSettingsForm';
 import { formatDate } from '../../utils/format';
 interface ControlsProps {
@@ -21,6 +22,10 @@ export function ScheduleControls({ template }: ControlsProps) {
         key={`${settings?.isPaused}:${settings?.endDate}`}
         template={template}
         settings={settings}
+      />
+      <SkipPlannedDateForm
+        template={template}
+        endDate={settings?.endDate}
       />
       <p>Changing the start date or frequency clears skipped dates. Recorded payments remain unchanged.</p>
       {skipped.length > 0 && (

@@ -1,3 +1,5 @@
+import { ACTUAL } from './actual.constants';
+import { ActualSourceSummary } from './ActualSourceSummary';
 import type { ActualWizard } from './useActualImport';
 /** Choose an explicit native file and import scope. @param {ActualWizard} wizard - Import state.
  * @returns {JSX.Element} Accessible file and consent controls. */
@@ -6,6 +8,7 @@ export function ActualUpload({ wizard }: { wizard: ActualWizard }) {
     <section className="panel actual-upload">
       <span className="eyebrow">1 · CHOOSE YOUR EXPORT</span>
       <h2>Bring your Actual budget along</h2>
+      <p className="field-hint">Actual importer {ACTUAL.importerVersion}</p>
       <p>In Actual, open Settings → Export data and download the budget ZIP. It is read on this device.</p>
       <label className="field">
         Actual Budget export · ZIP, up to 25 MiB
@@ -32,9 +35,7 @@ export function ActualUpload({ wizard }: { wizard: ActualWizard }) {
       )}
       {wizard.file && (
         <div className="actual-options">
-          <p>
-            <strong>{wizard.file.budgetName}</strong> · {wizard.file.transactions.length} transactions found
-          </p>
+          <ActualSourceSummary wizard={wizard} />
           <label>
             <input
               type="checkbox"

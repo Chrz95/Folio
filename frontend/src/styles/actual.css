@@ -114,3 +114,30 @@
   white-space: pre-wrap;
   color: var(--muted);
 }
+
+.actual-source-summary {
+  display: block;
+  padding: 16px;
+  background: var(--green-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.actual-source-summary > span {
+  display: block;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.actual-source-summary > span:last-child {
+  margin-bottom: 0;
+}
+.actual-source-result {
+  font-weight: 600;
+}
+
+.actual-payment-warning {
+  border-left: 3px solid #b36850;
+  padding: 12px 16px;
+  line-height: 1.6;
+}

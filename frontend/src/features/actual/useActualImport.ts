@@ -33,6 +33,16 @@ export function useActualImport() {
       },
     [source, includeBudgets, includeSchedules],
   );
+  const sourceSummary = useMemo(
+    () =>
+      source && {
+        total: source.recurring.length + source.exclusions.length,
+        supported: source.recurring.length,
+        ending: source.scheduleSettings.filter((row) => row.endDate).length,
+        linked: source.transactions.filter((row) => row.recurringId).length,
+      },
+    [source],
+  );
   const review = reviewed?.file === file && reviewed.data === data && currency ? reviewed.plan : null;
   /** Read a new explicit file; old worker results cannot replace the new selection.
    * @param {File} selected - Native ZIP. @returns {Promise<void>} Completed local read. */
@@ -114,6 +124,7 @@ export function useActualImport() {
   }
   return {
     isReading,
+    sourceSummary,
     file,
     includeBudgets,
     setIncludeBudgets,

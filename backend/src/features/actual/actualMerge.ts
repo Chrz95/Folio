@@ -144,6 +144,9 @@ export function actualPlan(target: ActualState, file: ActualFile) {
   });
   // Older imports may have omitted a schedule. Adding it must not rewrite or conflict with its old postings.
   const existingPostings = new Map(target.transactions.map((row) => [row.id, row]));
+  const preservedUnlinkedPayments = file.transactions.filter(
+    (row) => row.recurringId && existingPostings.get(row.id)?.recurringId === null,
+  ).length;
   const incomingPostings = file.transactions.map((row) =>
     existingPostings.get(row.id)?.recurringId === null && row.recurringId ? { ...row, recurringId: null } : row,
   );
@@ -175,6 +178,7 @@ export function actualPlan(target: ActualState, file: ActualFile) {
       scheduleSettings: scheduleSettings.length,
     },
     reused: file.transactions.length - transactions.length,
+    preservedUnlinkedPayments,
     accountRows: file.accounts.map((row) => ({
       id: row.id,
       name: row.name,

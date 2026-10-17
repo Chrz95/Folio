@@ -1,8 +1,12 @@
 /** Native archive limits and stable import identity; no Actual credentials are used. */
 export const ACTUAL = {
+  importerVersion: '1.10.2',
+  scheduleOccurrences: 5000,
+  diagnosticBytes: 16 * 1024,
   weekMilliseconds: 604800000,
   requiredConditions: 4,
   hexRadix: 16,
+  isoDayDigits: 2,
   hexDigits: 2,
   nativeFiles: 2,
   path: '/imports/actual',

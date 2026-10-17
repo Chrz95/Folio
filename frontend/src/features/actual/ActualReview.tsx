@@ -37,6 +37,12 @@ export function ActualReview({ wizard }: { wizard: ActualWizard }) {
         ))}
       </dl>
       <p>{review.reused} existing source transactions skipped.</p>
+      {review.preservedUnlinkedPayments > 0 && (
+        <p className="actual-payment-warning">
+          {review.preservedUnlinkedPayments} previously imported payments remain unlinked to schedules. Existing history
+          is preserved. Review or skip their planned dates before resuming reminders.
+        </p>
+      )}
       {wizard.file && (
         <ActualScheduleReview
           rows={review.rows.recurring}
