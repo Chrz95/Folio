@@ -25,6 +25,8 @@
 }
 .actual-options label {
   display: flex;
+  flex-direction: row;
+  min-height: var(--touch);
   gap: 12px;
   align-items: flex-start;
   line-height: 1.6;
@@ -87,4 +89,28 @@
   .actual-workspace {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
   }
+}
+
+.actual-schedule-review {
+  margin: 20px 0;
+  line-height: 1.6;
+}
+.actual-schedule-review summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+}
+.actual-schedule-review ul {
+  padding-left: 20px;
+}
+.actual-schedule-review li + li {
+  margin-top: 18px;
+}
+.actual-schedule-review p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.actual-schedule-notes {
+  white-space: pre-wrap;
+  color: var(--muted);
 }

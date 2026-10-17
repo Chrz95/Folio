@@ -142,7 +142,12 @@ export function actualPlan(target: ActualState, file: ActualFile) {
     }
     return !previous;
   });
-  const transactions = additions(file.transactions, target.transactions, (row) => row.id);
+  // Older imports may have omitted a schedule. Adding it must not rewrite or conflict with its old postings.
+  const existingPostings = new Map(target.transactions.map((row) => [row.id, row]));
+  const incomingPostings = file.transactions.map((row) =>
+    existingPostings.get(row.id)?.recurringId === null && row.recurringId ? { ...row, recurringId: null } : row,
+  );
+  const transactions = additions(incomingPostings, target.transactions, (row) => row.id);
   const recurring = additions(file.recurring, target.recurring, (row) => row.id);
   const monthlyBudgets = additions(
     file.monthlyBudgets,

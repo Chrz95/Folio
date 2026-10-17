@@ -38,6 +38,12 @@ export default function ActualImportPage() {
           <p>
             {wizard.result.transactions} transactions and {wizard.result.accounts} accounts added.
           </p>
+          {wizard.result.recurring > 0 && (
+            <p>
+              {wizard.result.recurring} recurring schedules added (paused).{' '}
+              <Link to="/recurring">Review them in Recurring</Link>.
+            </p>
+          )}
           <Link
             className="button primary"
             to="/transactions"

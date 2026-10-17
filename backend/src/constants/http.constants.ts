@@ -6,6 +6,7 @@ export const HTTP = {
   badRequest: 400,
   notFound: 404,
   conflict: 409,
+  tooLarge: 413,
   tooManyRequests: 429,
   internal: 500,
   unavailable: 503,

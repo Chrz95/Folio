@@ -1,6 +1,9 @@
 export const BACKUP = {
   format: 'folio-workspace',
   version: 1,
+  importPath: '/workspace/import',
+  confirmation: 'REPLACE',
+  maximumServerBytes: 16777216,
   maximumBytes: 8388608,
   maximumRows: 10000,
   maximumName: 100,

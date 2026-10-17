@@ -71,6 +71,28 @@ describe('native import preview workflow with actual storage and merge logic', (
     expect(readDemo().scheduleSettings?.find((row) => row.recurringId === file.recurring[0]!.id)?.isPaused).toBe(true);
     expect(readDemo().goals).toEqual(before.goals);
   });
+  it('shows approximate recurring amounts before acknowledgment and persists them paused', async () => {
+    const source = actualFixture();
+    const conditions = JSON.parse(String(source.rules[0]!.conditions));
+    conditions[2].op = 'isapprox';
+    conditions[3].op = 'isapprox';
+    source.rules[0]!.conditions = JSON.stringify(conditions);
+    vi.mocked(readActualFile).mockResolvedValueOnce(
+      convertActual(source, JSON.stringify({ id: 'approx-workflow', budgetName: 'Workflow fixture' })),
+    );
+    await choose();
+    await review();
+    expect(screen.getByText('1 recurring transactions to add · all paused')).toBeInTheDocument();
+    expect(screen.getByText(/Actual approximate amount:.*fixed estimate/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add reviewed data' })).toBeDisabled();
+    acknowledge();
+    fireEvent.click(screen.getByRole('button', { name: 'Add reviewed data' }));
+    await screen.findByText('Your budget has arrived');
+    expect(screen.getByRole('link', { name: 'Review them in Recurring' })).toHaveAttribute('href', '/recurring');
+    const recurring = readDemo().recurring.find((row) => row.name === 'Rent' && row.notes.includes('fixed estimate'))!;
+    expect(recurring.amount).toBe(300);
+    expect(readDemo().scheduleSettings?.find((row) => row.recurringId === recurring.id)?.isPaused).toBe(true);
+  });
   it('offers a complete review download and no second commit for an identical export', async () => {
     await choose();
     await review();

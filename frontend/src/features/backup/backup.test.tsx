@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
+import { reviewWorkspace, importWorkspace } from './workspaceImportService';
+import { webcrypto } from 'node:crypto';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { createDemoSeed } from '../transactions/demoSeed.constants';
 import { writeDemo, readDemo } from '../../lib/storage/demoStore';
-import { parseBackup, restoreBackup, exportBackup } from './backupService';
+import { parseBackup, exportBackup } from './backupService';
 import { BackupRestore } from './BackupRestore';
 import { saveReceipt } from '../receipts/receiptService';
 import { APP } from '../../constants/app.constants';
@@ -14,6 +16,7 @@ vi.mock('../../app/config/environment', () => ({ environment: { isDemo: true, ap
 vi.mock('../../app/WorkspaceContext', () => ({ useWorkspace: () => workspace }));
 beforeEach(() => {
   localStorage.clear();
+  vi.stubGlobal('crypto', webcrypto);
   workspace.data = createDemoSeed();
   writeDemo(workspace.data);
   workspace.reload.mockImplementation(async () => {
@@ -24,6 +27,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   localStorage.clear();
 });
 /** Clone the fictional workspace for a mutable validation fixture.
@@ -34,7 +38,7 @@ function seed() {
 /** Select an actual browser File in the import control. @param {string} text - JSON payload.
  * @returns {void} File selection event. */
 function select(text: string) {
-  fireEvent.change(screen.getByLabelText('Review a preview backup'), {
+  fireEvent.change(screen.getByLabelText('Import workspace data'), {
     target: { files: [new File([text], 'folio.json', { type: 'application/json' })] },
   });
 }
@@ -56,8 +60,8 @@ describe('portable preview backups', () => {
     const parsed = parseBackup(text);
     expect(parsed.receipts[0]?.content).toBe(btoa(bytes));
     expect(parseBackup(JSON.stringify(seed())).transactions).toHaveLength(seed().transactions.length);
-    const previous = localStorage.getItem(APP.storageKey);
-    restoreBackup(parsed, previous);
+    const review = await reviewWorkspace(parsed);
+    await importWorkspace(parsed, review.revision);
     expect(readDemo().receipts).toHaveLength(1);
   });
   it('rejects malformed JSON, unsupported versions, invalid amounts, duplicate IDs and missing account links', () => {
@@ -155,27 +159,32 @@ describe('portable preview backups', () => {
     const before = localStorage.getItem(APP.storageKey);
     render(<BackupRestore />);
     select(JSON.stringify(source));
-    await screen.findByRole('button', { name: 'Replace preview workspace' });
+    await screen.findByRole('button', { name: 'Replace workspace' });
     expect(localStorage.getItem(APP.storageKey)).toBe(before);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel restore' }));
-    expect(screen.queryByRole('button', { name: 'Replace preview workspace' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel import' }));
+    expect(screen.queryByRole('button', { name: 'Replace workspace' })).not.toBeInTheDocument();
     select(JSON.stringify(source));
-    await screen.findByRole('button', { name: 'Replace preview workspace' });
-    fireEvent.click(screen.getByRole('button', { name: 'Replace preview workspace' }));
+    await screen.findByRole('button', { name: 'Replace workspace' });
+    expect(screen.getByRole('button', { name: 'Replace workspace' })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('I understand this replaces the current financial workspace.'));
+    fireEvent.click(screen.getByRole('button', { name: 'Replace workspace' }));
     await waitFor(() => expect(readDemo().transactions).toHaveLength(0));
-    expect(workspace.setNotice).toHaveBeenCalledWith('Preview workspace restored.');
+    expect(workspace.setNotice).toHaveBeenCalledWith(
+      'Workspace imported. Imported schedules are paused until you resume them.',
+    );
   });
-  it('rejects stale reviews and preserves storage when the browser refuses a replacement', () => {
+  it('rejects stale reviews and preserves storage when the browser refuses a replacement', async () => {
     const data = parseBackup(JSON.stringify(seed()));
-    const previous = localStorage.getItem(APP.storageKey);
+    const review = await reviewWorkspace(data);
     writeDemo({ ...readDemo(), budgets: [] });
     const changed = localStorage.getItem(APP.storageKey);
-    expect(() => restoreBackup(data, previous)).toThrow('preview changed');
+    await expect(importWorkspace(data, review.revision)).rejects.toThrow('workspace changed');
     expect(localStorage.getItem(APP.storageKey)).toBe(changed);
+    const retry = await reviewWorkspace(data);
     const writing = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('Quota exceeded');
     });
-    expect(() => restoreBackup(data, changed)).toThrow('Quota');
+    await expect(importWorkspace(data, retry.revision)).rejects.toThrow('Quota');
     writing.mockRestore();
     expect(localStorage.getItem(APP.storageKey)).toBe(changed);
   });
@@ -184,7 +193,7 @@ describe('portable preview backups', () => {
     render(<BackupRestore />);
     select('{broken');
     expect(await screen.findByRole('alert')).toHaveTextContent('not valid JSON');
-    expect(screen.queryByRole('button', { name: 'Replace preview workspace' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Replace workspace' })).not.toBeInTheDocument();
     expect(localStorage.getItem(APP.storageKey)).toBe(previous);
   });
 });

@@ -3,8 +3,7 @@ import { Download } from 'lucide-react';
 import { exportBackup } from './backupService';
 import { BackupRestore } from './BackupRestore';
 import { downloadFile } from '../transactions/export';
-import { environment } from '../../app/config/environment';
-/** Export fresh data and supporting files; preview imports never replace a live SQLite database.
+/** Export fresh recovery data and offer a reviewed financial workspace import.
  * @returns {JSX.Element} Portable backup controls. */
 export function WorkspaceBackup() {
   const [error, setError] = useState('');
@@ -27,11 +26,7 @@ export function WorkspaceBackup() {
         <Download size={16} />
         {isBusy ? 'Preparing backup…' : 'Export workspace'}
       </button>
-      {environment.isDemo ? (
-        <BackupRestore />
-      ) : (
-        <p>Exports include receipt bytes. Restore complete SQLite backups using the server recovery steps.</p>
-      )}
+      <BackupRestore />
       {error && (
         <p
           className="error-message"

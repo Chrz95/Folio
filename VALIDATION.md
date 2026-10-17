@@ -3,6 +3,86 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.10 verification
+
+250 tests in thirty-three files pass. New native ZIP tests build and close real source SQLite files before decoding
+with SQL.js: exact/approximate/range amounts, signed midpoint rounding, approximate date matching, four supported
+frequencies, inclusive end dates, optional payees, native aliases, safe category/notes actions and both transfer
+orientations. Zero/cross-zero ranges, malformed amounts, missing/self accounts, altered/template actions, duplicate
+conditions, wrong schedule links, unsupported daily/custom/pattern recurrences and invalid endings are excluded.
+
+Upgrade tests cover adding newly supported schedules to older imports, unchanged historical postings and account
+balances, repeat detection and continued conflict protection for edited amounts. File-backed SQLite HTTP coverage
+verifies read-only review, commit, paused controls, reopened persistence and repeat safety. Browser-storage UI coverage
+requires acknowledgment, displays recurring estimates before commit and offers the Recurring link afterward.
+
+A separately migrated disposable SQLite database ran the compiled production HTTP server. Real HTTP verified a legacy
+import without schedules, a read-only review adding only the new approximate schedule, commit with byte-equivalent
+historical posting rows, paused controls, repeat detection, reopened durability and successful graceful HTTP/SQLite
+shutdown. No runtime financial database was used. The test process and temporary database were cleaned up.
+
+Computed CSS checks load all production styles in entry-point order under jsdom. Six contexts (Actual/workspace consent,
+inline, reconciliation, bulk and editor toggle) resolve to 20×20 checkbox inputs with zero padding, horizontal labels
+and retained touch-target rules. Ordinary text inputs retain 12-pixel padding. This is not a browser visual audit.
+
+The public Actual Wrapped demo from https://github.com/actualbudget/wrapped decodes eight
+accounts and 359 postings with all balances reconciled. Its supported one-time approximate schedule now imports paused;
+two month-end schedules and one accountless schedule remain explicitly excluded. A separate upstream e2e archive
+with inconsistent split totals is correctly rejected. No public fixture or external source is bundled with this release.
+
+The supplied Dockerfile is byte-identical to the repository Dockerfile, SHA-256
+`4aa4195f08a01411aec6f76af9d33be16143cde2c8f6fb959076139d00f95460`; it is retained unchanged. Registry Compose defaults
+to 1.10.0, keeping ports 8081/5001 and the same volume layout. No dependency or database migration is required.
+Strict frontend/backend/worker types, lint with zero warnings, named-source JSDoc, formatting, source line/component
+limits, production frontend/backend build and native importer/PWA worker/WASM artifact checks pass.
+
+Browser visual and real-device testing, Docker/Buildx/ARM64 execution, Compose runtime and live Web Push delivery remain
+unverified in this environment. Source schedule automation stays disabled; all imported schedules require review/resume.
+
+## Version 1.9 verification
+
+224 tests in thirty-two files pass. New real file-backed SQLite HTTP tests validate read-only workspace review,
+all financial replacement collections, receipts, reconciliation balances on both transfer legs, stable import links,
+paused schedule controls and skipped dates, reopened persistence, retained device subscriptions/preferences/history,
+cleared old server snoozes, explicit confirmation, changed source/destination rejection and late-write rollback.
+Corrupt identities, account/goal links, statement balances, fingerprints and file payloads reject before writes.
+Server review accepts valid receipts above the preview capacity; bodies over 16 MiB return a safe HTTP 413 envelope.
+The existing preview recovery tests now exercise the new review/acknowledgment path; fresh-source/destination guards,
+quota failure, retry and preservation of unrelated browser settings are checked against actual storage.
+
+Notification tests exercise separate desktop/Apple-provider registrations, current-device-only tests, no financial
+content in test payloads, explicit VAPID provider options, public configuration without signing secrets, disconnection
+of only one device, persistent cooldown across reopen, concurrent test reservation, disabled/unregistered/SSRF target
+rejection, provider errors and expired endpoint cleanup. The provider is injected/mocked: no real push service is called.
+The compiled key generator is covered for valid output, owner-only permissions and refusal to overwrite an existing file.
+
+Browser service/UI tests verify no permission prompt on load, synchronous permission initiation from the enable click,
+exact application-server bytes, denied/save-failure behavior, stale local flags, actual server registration checks,
+HTTPS and iOS Home Screen guidance, capability refresh, current-device tests and honest provider-failure feedback.
+Worker readiness has a tested deadline. Foreground notification delivery awaits mobile service-worker display and
+retains preference changes made while waiting; rejected display is recorded as failed and successful repeats suppressed.
+
+The full existing Actual Budget import, ledger, reports, statement, scheduling and planning suite remains green.
+Lint reports zero warnings; strict frontend/backend/worker types, named-source JSDoc, formatting, 120-character source
+lines, 100-line component limits, production frontend/backend build and PWA/native-import worker/WASM checks pass.
+No database migration or dependency addition is required. All integration writes use isolated disposable test files;
+no host runtime financial data is changed. SQLite remains the persistent self-hosted database.
+
+A separately migrated SQLite database also ran the compiled production HTTP server with newly generated test-only VAPID
+keys. Real HTTP verified enabled public configuration, registration status, rejection of an unregistered test without
+contacting a provider, read-only workspace preview, receipt round-trip, paused import, retained device registration,
+stale-review rejection and reopened persistence. The compiled CLI produced mode-0600 key output and refused overwrite.
+SIGTERM exited zero and confirmed HTTP/SQLite closure. The private fixture keys and database were cleaned up afterward.
+
+The added registry Compose file uses versioned ARM64 images, host ports 8081/5001, internal ports 8080/3001, no profiles
+or YAML anchors, and the source nginx file as a read-only bind mount. The source template allows a 16 MiB request body.
+The signing-key environment file is excluded from Git and Docker build contexts. The private publishing audience is
+retained for the hosted preview, which continues to store data only in its browser and does not run background push.
+
+Browser visual/real-device tests, Docker/Buildx/ARM64 execution, Compose runtime, image/non-root inspections, nginx TLS
+proxy behavior and actual desktop/Android/iOS Web Push delivery remain unverified. HTTPS deployment, stable server VAPID
+keys, same-server access and explicit permission on every device are required for background phone reminders.
+
 ## Version 1.8 verification
 
 189 tests in twenty-six files pass. The 31 new tests cover native root/nested ZIP exports containing real isolated
@@ -185,7 +265,7 @@ claim is made for those checks. The schema upgrade is additive; no previous tabl
 - Strict frontend/backend/worker type checking; both static frontend and compiled backend production builds.
 - Oxlint with `--deny-warnings`: zero errors and zero warnings after supported-rule adjustments.
 - Prettier formatting; source component size and manually maintained TypeScript line-length inspection.
-- 189 deterministic tests in twenty-six files, including file-backed SQLite persistence and frontend interactions.
+- 224 deterministic tests in thirty-two files, including file-backed SQLite persistence and frontend interactions.
 - Production manifest/icon/service-worker artifact verification.
 
 The test suite covers HTTP validation and errors, security headers, CORS, pagination, accounts, budgets, constraints,

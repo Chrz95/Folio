@@ -1,6 +1,7 @@
 import type { ActualWizard } from './useActualImport';
 import { ACTUAL } from './actual.constants';
 import { ActualBalances } from './ActualBalances';
+import { ActualScheduleReview } from './ActualScheduleReview';
 /** Download every approved addition and compatibility exclusion for inspection.
  * @param {ActualWizard} wizard - Reviewed workflow. @returns {void} Browser download. */
 function download(wizard: ActualWizard) {
@@ -36,6 +37,12 @@ export function ActualReview({ wizard }: { wizard: ActualWizard }) {
         ))}
       </dl>
       <p>{review.reused} existing source transactions skipped.</p>
+      {wizard.file && (
+        <ActualScheduleReview
+          rows={review.rows.recurring}
+          file={wizard.file}
+        />
+      )}
       <ActualBalances review={review} />
       <button
         className="button secondary"

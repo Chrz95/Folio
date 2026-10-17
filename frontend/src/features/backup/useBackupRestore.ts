@@ -1,29 +1,47 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWorkspace } from '../../app/WorkspaceContext';
-import { parseBackup, restoreBackup } from './backupService';
+import { environment } from '../../app/config/environment';
+import { parseBackup } from './backupService';
 import type { RestorableWorkspace } from './backupSchema';
+import { reviewWorkspace, importWorkspace } from './workspaceImportService';
+import type { WorkspaceImportReview } from './workspaceImportPlan';
 import { BACKUP } from './backup.constants';
-import { APP } from '../../constants/app.constants';
-/** Stage a file without writes and require an explicit reviewed replacement action.
- * @returns {object} Backup review state and actions. */
+/** Stage a source, review exact counts and explicitly acknowledge the replacement before any write.
+ * @returns {object} File import workflow. */
 export function useBackupRestore() {
-  const { reload, setNotice } = useWorkspace();
-  const [reviewed, setReviewed] = useState<RestorableWorkspace | null>(null);
-  const [previous, setPrevious] = useState<string | null>(null);
+  const { data, reload, setNotice } = useWorkspace();
+  const [staged, setStaged] = useState<{
+    source: RestorableWorkspace;
+    review: WorkspaceImportReview;
+    workspace: typeof data;
+  } | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState('');
   const [isBusy, setBusy] = useState(false);
-  /** Validate a bounded browser-selected JSON file. @param {File | undefined} file - Backup file.
-   * @returns {Promise<void>} Read-only review. */
+  const sequence = useRef(0);
+  useEffect(
+    () => () => {
+      sequence.current += 1;
+    },
+    [],
+  );
+  const reviewed = staged?.workspace === data ? staged : null;
+  /** Validate a bounded explicit file and bind its review to the latest selection and workspace.
+   * @param {File | undefined} file - Source JSON. @returns {Promise<void>} Read-only review. */
   async function choose(file?: File) {
-    setReviewed(null);
+    const selection = ++sequence.current;
+    setStaged(null);
+    setAcknowledged(false);
     setError('');
     if (!file) {
+      setBusy(false);
       return;
     }
     setBusy(true);
     try {
-      if (file.size > BACKUP.maximumBytes) {
-        throw new Error('Choose a workspace backup of up to 8 MiB.');
+      const maximum = environment.isDemo ? BACKUP.maximumBytes : BACKUP.maximumServerBytes;
+      if (file.size > maximum) {
+        throw new Error('The workspace backup exceeds this destination’s import limit.');
       }
       const text = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -31,36 +49,54 @@ export function useBackupRestore() {
         reader.onerror = () => reject(new Error('This backup could not be read.'));
         reader.readAsText(file);
       });
-      const next = parseBackup(text);
-      setPrevious(localStorage.getItem(APP.storageKey));
-      setReviewed(next);
+      const source = parseBackup(text);
+      const review = await reviewWorkspace(source);
+      if (sequence.current === selection) {
+        setStaged({ source, review, workspace: data });
+      }
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Unable to read this backup.');
+      if (sequence.current === selection) {
+        setError(failure instanceof Error ? failure.message : 'Unable to read this backup.');
+      }
     } finally {
-      setBusy(false);
+      if (sequence.current === selection) {
+        setBusy(false);
+      }
     }
   }
-  /** Commit only the currently reviewed replacement. @returns {Promise<void>} Updated preview and feedback. */
+  /** Replace only the current acknowledged financial workspace.
+   * @returns {Promise<void>} Durable save feedback, distinguishing refresh failures. */
   async function restore() {
-    if (!reviewed || isBusy) {
+    if (!reviewed || !acknowledged || isBusy) {
       return;
     }
     setBusy(true);
     setError('');
     try {
-      restoreBackup(reviewed, previous);
-      setReviewed(null);
-      await reload();
-      setNotice('Preview workspace restored.');
+      await importWorkspace(reviewed.source, reviewed.review.revision);
+      setStaged(null);
+      setAcknowledged(false);
+      setNotice('Workspace imported. Imported schedules are paused until you resume them.');
+      try {
+        await reload();
+      } catch {
+        setError('Import saved. Refresh the page to load the updated workspace.');
+      }
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Unable to restore. Storage was not updated.');
+      setStaged(null);
+      setAcknowledged(false);
+      setError(failure instanceof Error ? failure.message : 'Unable to import. Storage was not updated.');
     } finally {
       setBusy(false);
     }
   }
-  /** Discard a review without touching stored data. @returns {void} Clears review state. */
+  /** Discard pending file results without changing storage. @returns {void} Cancelled review. */
   function cancel() {
-    setReviewed(null);
+    sequence.current += 1;
+    setStaged(null);
+    setAcknowledged(false);
+    setBusy(false);
   }
-  return { reviewed, error, isBusy, choose, restore, cancel };
+  return { reviewed, acknowledged, setAcknowledged, error, isBusy, choose, restore, cancel };
 }
+export type WorkspaceImporter = ReturnType<typeof useBackupRestore>;

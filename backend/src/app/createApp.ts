@@ -1,3 +1,5 @@
+import { createWorkspaceRoutes } from '../features/workspace/workspace.routes.js';
+import { BACKUP } from '../features/workspace/backup.constants.js';
 import { createActualRoutes } from '../features/actual/actual.routes.js';
 import { createBulkRoutes } from '../features/bulk/bulk.routes.js';
 import { createScheduleRoutes } from '../features/schedules/schedule.routes.js';
@@ -54,6 +56,7 @@ export function createApp(client: DatabaseClient, configuration: ReturnType<type
     }),
   );
   app.use(`${configuration.apiPrefix}/imports/actual`, express.json({ limit: '8mb' }));
+  app.use(`${configuration.apiPrefix}${BACKUP.importPath}`, express.json({ limit: BACKUP.maximumServerBytes }));
   app.use(express.json({ limit: LIMIT.body }));
   app.use(cors({ origin: configuration.origins }));
   app.get(`${configuration.apiPrefix}${API.health}`, (_request, response) =>
@@ -76,6 +79,7 @@ export function createApp(client: DatabaseClient, configuration: ReturnType<type
   app.use(configuration.apiPrefix, createScheduleRoutes(client));
   app.use(configuration.apiPrefix, createBulkRoutes(client));
   app.use(configuration.apiPrefix, createActualRoutes(client));
+  app.use(configuration.apiPrefix, createWorkspaceRoutes(client));
   app.use(notFoundHandler);
   app.use(createErrorHandler(logger));
   return app;

@@ -1,0 +1,16 @@
+export const BACKUP = {
+  format: 'folio-workspace',
+  version: 1,
+  importPath: '/workspace/import',
+  confirmation: 'REPLACE',
+  maximumServerBytes: 16777216,
+  maximumBytes: 8388608,
+  maximumRows: 10000,
+  maximumName: 100,
+  maximumNotes: 1000,
+  maximumCategory: 40,
+  minimumMonth: '1900-01-01',
+  maximumMonth: '9999-12-01',
+  maximumFingerprint: 2000,
+  maximumBankId: 200,
+} as const;

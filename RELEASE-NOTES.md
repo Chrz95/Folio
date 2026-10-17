@@ -1,3 +1,36 @@
+# Folio 1.10
+
+- **Compact checkboxes:** native 20-pixel controls no longer inherit text input padding, minimum field heights or
+  full-width label rules. Consent and toggle labels retain 44-pixel touch targets; import rows stay horizontal.
+- **Actual recurring imports:** exact/approximate/range amounts, approximate date matching, optional payees, account/payee
+  aliases, two-account transfer schedules and safe plain category/notes actions. Reviewed estimates disclose source
+  values; imported schedules stay paused. Unsupported recurrence/action semantics remain explicit exclusions.
+- **Review and upgrade:** each new schedule appears before acknowledgment; completion links to Recurring. Newly supported
+  schedules can be added to older imports without changing historical postings. Other edited identities still conflict.
+- **Dockerfile:** the supplied file is retained byte-for-byte as Dockerfile; registry Compose defaults to 1.10.0 with
+  host ports 8081/5001. No database migration or dependency change.
+
+250 tests pass in thirty-three files. Strict types, zero-warning lint and named-source documentation checks pass.
+Browser visuals, Docker/Buildx/ARM64 execution and live push remain unverified. See VALIDATION for build checks.
+
+# Folio 1.9
+
+- **Workspace JSON import:** Settings now supports the self-hosted SQLite application as well as the preview. Review
+  every financial collection, download a recovery export and acknowledge a full replacement. Complete graph/file
+  validation and a current SHA-256 revision precede the single atomic replacement; late failures roll back all writes.
+- **Paused migration:** imported schedules retain end/skip history but start paused. Device subscriptions, notification
+  preferences/history and appearance remain intact; old server financial snoozes are cleared. No schema migration.
+- **Browser and phone setup:** actual permission and registration status, per-device enrollment/disconnect, user-gesture
+  permission timing, actionable HTTPS/iOS Home Screen guidance, copied app address and a current-device test button.
+- **Honest delivery feedback:** generic private payloads, provider acceptance rather than claimed display, persistent
+  cooldown, expired subscription cleanup and asynchronous foreground mobile display handling.
+- **Pi deployment:** versioned registry Compose with host ports 8081/5001 and a file-backed nginx configuration; private
+  VAPID-file generator refuses overwrites. Existing Actual Budget import remains available.
+
+224 tests pass in thirty-two files. Production builds, strict types, zero-warning lint and PWA artifacts pass.
+Provider delivery is simulated; real devices, Docker/ARM64 execution and HTTPS deployment remain unverified.
+See README for import limits, phone requirements, deployment commands and verification limitations.
+
 # Folio 1.8
 
 - **Actual Budget migration:** read a native ZIP locally, confirm EUR, choose scope, review exact additions and all-recorded

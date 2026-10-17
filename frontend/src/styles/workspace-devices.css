@@ -1,0 +1,49 @@
+.workspace-import-consent {
+  display: flex;
+  flex-direction: row;
+  min-height: var(--touch);
+  gap: 12px;
+  align-items: flex-start;
+  line-height: 1.6;
+  margin: 20px 0;
+}
+.workspace-import-consent input {
+  flex: 0 0 auto;
+  margin-top: 6px;
+}
+.backup-review dl > div,
+.notification-device dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+}
+.backup-review dt {
+  text-transform: capitalize;
+}
+.backup-review dd,
+.notification-device dd {
+  margin: 0;
+  text-align: right;
+}
+.notification-device dl {
+  margin: 20px 0;
+  font-size: 13px;
+}
+.phone-notification-help {
+  margin: 22px 0;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.phone-notification-help summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.phone-notification-help ol {
+  padding-left: 22px;
+  line-height: 1.7;
+}
+.phone-notification-help li + li {
+  margin-top: 12px;
+}

@@ -92,7 +92,26 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
     }
     return label(row.name || 'Actual transaction', ACTUAL.name);
   }
-  const schedules = convertSchedules(source, budget, accountIds, payee);
+  /** Resolve scheduled transfers through the same merged payees as historical transactions.
+   * @param {unknown} value - Payee key. @returns {string | null} Destination account identity. */
+  function transferAccount(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+    const row = payees.get(payeeMap(value));
+    if (!row) {
+      throw new Error('A schedule refers to an unavailable payee.');
+    }
+    if (!row.transfer_acct) {
+      return null;
+    }
+    const id = accountIds.get(text(row.transfer_acct));
+    if (!id) {
+      throw new Error('A schedule transfer account is unavailable.');
+    }
+    return id;
+  }
+  const schedules = convertSchedules(source, budget, accountIds, payee, category, transferAccount);
   const recurringById = new Map(schedules.recurring.map((row) => [row.id, row]));
   const linkedDates = new Set<string>();
   const transactions: ActualFile['transactions'] = [];
@@ -188,6 +207,7 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
       schedule.amount === posting.amount &&
       schedule.type === posting.type &&
       schedule.accountId === posting.accountId &&
+      schedule.destinationAccountId === posting.destinationAccountId &&
       !linkedDates.has(paidKey) &&
       isActualOccurrence(schedule.date, schedule.frequency, posting.date)
     ) {
@@ -237,7 +257,10 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
       'Split children become separate postings; split grouping is not retained. Starting balances become openings.',
       'Closed and off-budget accounts become ordinary manual accounts. Bank connections and groups are not imported.',
       'Reconciled entries become cleared entries; source reconciliation statements are not recreated.',
-      'Supported schedules import paused with category Other. Review before resuming reminders or payments.',
+      'Supported schedules import paused; simple category/notes actions carry over, otherwise category is Other.',
+      'Approximate amounts become fixed estimates; ranges use a rounded midpoint. Review notes before resuming.',
+      'Date matching tolerance and source auto-posting are not enabled. Unsupported schedules are listed below.',
+      'Existing historical postings keep their schedule links when importing newly supported schedules.',
       'Long or duplicate category names receive stable suffixes; original names are included in the review.',
       'Tags, rule automation, reports, attachments, goal formulas and carryover are not imported.',
       `${zeroRows} zero-value postings excluded; ` +

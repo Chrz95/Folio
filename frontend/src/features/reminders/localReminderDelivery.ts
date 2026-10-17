@@ -5,12 +5,12 @@ import { readLocalReminderState, writeLocalReminderState } from './reminderState
 import { REMINDERS } from './reminders.constants';
 /** Deliver opt-in preview notifications with the same timing policy and bounded retry semantics.
  * @param {BudgetData} data - Budget. @param {number} now - Clock.
- * @param {(title: string, options: NotificationOptions) => void} notify - Browser boundary.
- * @returns {void} Persists provider success/failure without exposing payees. */
-export function runLocalReminderScan(
+ * @param {(title: string, options: NotificationOptions) => void | Promise<void>} notify - Browser boundary.
+ * @returns {Promise<void>} Persists provider success/failure without exposing payees. */
+export async function runLocalReminderScan(
   data: BudgetData,
   now: number,
-  notify: (title: string, options: NotificationOptions) => void,
+  notify: (title: string, options: NotificationOptions) => void | Promise<void>,
 ) {
   const state = readLocalReminderState();
   const ledger = state.deliveryLedger ?? [...state.attempts];
@@ -27,7 +27,7 @@ export function runLocalReminderScan(
     }
     let status: ReminderAttempt['status'] = 'sent';
     try {
-      notify(job.title, { body: job.body, tag: job.key });
+      await notify(job.title, { body: job.body, tag: job.key });
     } catch {
       status = 'failed';
     }
@@ -49,10 +49,18 @@ export function runLocalReminderScan(
     hasChanged = true;
   }
   if (hasChanged) {
-    state.deliveryLedger = ledger;
-    state.attempts = [...ledger]
+    const latest = readLocalReminderState();
+    const merged = new Map((latest.deliveryLedger ?? latest.attempts).map((entry) => [entry.id, entry]));
+    for (const entry of ledger) {
+      const current = merged.get(entry.id);
+      if (!current || current.attemptedAt <= entry.attemptedAt) {
+        merged.set(entry.id, entry);
+      }
+    }
+    latest.deliveryLedger = [...merged.values()];
+    latest.attempts = [...latest.deliveryLedger]
       .sort((first, second) => second.attemptedAt - first.attemptedAt)
       .slice(0, REMINDERS.historyLimit);
-    writeLocalReminderState(state);
+    writeLocalReminderState(latest);
   }
 }

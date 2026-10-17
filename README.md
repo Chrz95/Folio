@@ -4,6 +4,128 @@ A calm, manual budget manager for everyday finances. Track income, expenses and 
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
 
+## Version 1.10: compact checkboxes and recurring Actual imports
+
+Checkboxes now use compact 20-pixel native controls. Text-field padding, full-width sizing and 44-pixel field height
+no longer stretch them; their clickable labels retain a minimum 44-pixel height. Import consent rows, reconciliation,
+selection and schedule toggles use the same sizing.
+
+**Transactions → Import Actual Budget** now accepts exact, approximate and range amounts, exact or approximate date
+matching, optional payees, native account/payee aliases, and safe plain category/notes actions. Approximate amounts
+become fixed estimates; a range becomes its rounded midpoint using Actual's signed rounding. The review displays the
+new recurring transactions, their dates, accounts, amounts and explanatory notes before acknowledgment. All start
+**paused**. Open **Recurring** after import to edit amounts and resume schedules. Imported transfer schedules preserve
+the direction between two imported accounts. This does not execute source rules or enable source auto-posting.
+
+You can re-import an unchanged Actual export to add newly supported schedules to a previous migration. Existing
+postings and their original schedule links stay intact, including older unlinked history; all other changed financial
+fields still cause a conflict. Review past dates before resuming: previously unlinked payments can appear unpaid.
+Unsupported recurrence semantics remain explicitly listed with reasons; see the compatibility table below.
+
+The supplied `Dockerfile(1)` is used as `Dockerfile`, byte-for-byte. It already matched the previous Dockerfile.
+Registry Compose now defaults to image tag **1.10.0**, retaining host ports **8081/5001** and the existing SQLite volume.
+Rebuild and push frontend, backend and migrate targets before pulling this version on the Pi. No database migration
+or new dependency is required. Docker/ARM64 execution and browser visual checks remain unverified here.
+
+## Version 1.9: workspace import and browser/phone notifications
+
+**Settings → Your data belongs to you → Import workspace data** accepts a Folio JSON export, including legacy raw
+exports and the versioned `folio-workspace` envelope. The complete file is validated before a read-only review shows
+before/after counts for every financial collection. Export the current workspace for recovery, check the explicit
+replacement acknowledgment, then choose **Replace workspace**. This is a full financial replacement, not a merge.
+Actual Budget native ZIP import remains available separately under Transactions → Import Actual Budget.
+
+The server validates names, exact cents, dates, identities, account/category/schedule links, paid/skipped occurrences,
+goal progress, both transfer clearance legs, statement balances, bank import fingerprints and attachment bytes.
+Commit rechecks a SHA-256 revision against all current financial rows and the effective source, then replaces financial
+rows in one SQLite transaction. Changed source/destination data and failed late writes cannot produce a partial import.
+The preview uses the same review policy and one atomic browser storage write. No migration is needed.
+
+All imported schedules are **paused**, retaining their end dates and skipped dates; review and resume them deliberately
+in Recurring. Device subscriptions, reminder preferences, notification delivery history and appearance remain intact.
+The server clears snoozes tied to the replaced schedules. The preview retains its separately stored notification state.
+Limits: server 16 MiB normalized JSON / 8 MiB total receipts; preview 8 MiB JSON / 2 MiB total receipts; each receipt
+512 KiB, five per transaction; 10,000 rows per collection. Oversized exports require a smaller JSON or a complete SQLite
+recovery. A workspace JSON imports financial data, not server configuration or notification signing keys.
+
+**Settings → Browser & phone notifications** now reports actual permission, this device's registration and the server's
+subscription count. Enable each device independently. Permission is requested only from the explicit enable action,
+before awaiting network work so the iOS user gesture is preserved. A stale browser flag does not indicate registration.
+Use **Send test notification** on each device; provider acceptance is distinguished from actual OS display. Tests target
+only the current previously registered device, use generic content, and have a persistent 30-second cooldown. Expired
+subscriptions are removed. Disconnecting a device leaves all other subscribed devices in place.
+
+Desktop and Android browsers with Web Push use an active service worker. On iPhone/iPad with iOS 16.4+, open the same
+HTTPS app address, choose Share → Add to Home Screen, open that app, then enable notifications. The setup panel explains
+HTTPS, denied permissions, missing server keys and installation requirements and can copy a reachable HTTPS app origin.
+Both devices must use the same self-hosted server to share the budget; the hosted preview has separate browser-local
+workspaces and foreground-only reminders. Foreground display uses service-worker notifications on mobile and records
+success only after display resolves. Scheduled server Web Push continues when the page is closed, while the server runs.
+OS permissions, Focus, connectivity and battery policies can suppress display; provider acknowledgment never means read.
+
+Generate VAPID keys **once**, retain them across restarts, and set the server contact URI. The generator writes a new
+owner-only file and refuses to overwrite an existing key file; it does not print the private key:
+
+```bash
+pnpm push:keys ./push.env mailto:you@example.com
+```
+
+Load the three values into the backend deployment environment. The frontend receives only the public key. The server
+needs outbound HTTPS to the browser push providers. HTTPS must terminate at your existing reverse proxy, which forwards
+to Folio's frontend; setting `PUBLIC_ORIGIN` alone does not configure TLS. The phone must trust the certificate and reach
+that HTTPS address. An ordinary `http://192.168.x.x` address cannot enable phone Web Push. Keep the existing private
+access/authentication arrangement; the application remains single-user.
+
+### Raspberry Pi registry deployment
+
+`compose.registry.yaml` uses your `192.168.1.11:5000` registry, ARM64 images, host ports **8081** (frontend) and **5001**
+(backend), with internal ports 8080/3001 unchanged. It uses a real nginx config file from `frontend/nginx/nginx.conf`,
+no inline Compose configs, anchors or profiles. Keep that file beside the deployment in the supplied directory layout.
+Use the same Compose project name (`-p`/`COMPOSE_PROJECT_NAME`) as your existing installation to retain its SQLite volume;
+changing directory/project names creates a different default volume. Host ports stay bound to loopback for the existing
+SSH tunnel or reverse proxy. The registry port 5000 is independent of the backend port.
+
+From the source root, using your previously configured Buildx builder:
+
+```bash
+for target in frontend backend migrate; do
+  docker buildx build --platform linux/arm64 --target "$target" \
+    --build-arg VERSION=1.10.0 \
+    -t "192.168.1.11:5000/folio-${target}:1.10.0" \
+    -t "192.168.1.11:5000/folio-${target}:latest" --push .
+done
+```
+
+On the Pi, if keys have not already been configured, generate a new private file using the compiled backend image
+(no host pnpm installation required). Replace the contact address first and preserve existing configured keys:
+
+```bash
+docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
+  --volume "$PWD:/keys" \
+  192.168.1.11:5000/folio-backend:1.10.0 \
+  backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
+```
+
+For an existing installation, stop the old writer and take a consistent SQLite backup before upgrading. Do not remove
+volumes. Run the new registry Compose from the source directory, using the same project identity as before:
+
+```bash
+# If the old deployment uses docker-compose.custom.yaml:
+docker compose -f docker-compose.custom.yaml down
+
+# Set this to the real reachable HTTPS origin after configuring your reverse proxy.
+export PUBLIC_ORIGIN=https://your-folio-host.example
+
+docker compose --env-file push.env -f compose.registry.yaml pull
+docker compose --env-file push.env -f compose.registry.yaml up -d
+docker compose --env-file push.env -f compose.registry.yaml ps
+```
+
+If VAPID keys are already supplied by another environment file, use that file instead of generating `push.env`.
+`FOLIO_REGISTRY`, `IMAGE_TAG`, `FRONTEND_PORT`, `BACKEND_PORT` and `PUBLIC_ORIGIN` can be overridden in the deployment
+environment. For a plain-HTTP image registry, configure the Pi Docker daemon's insecure registries separately from
+BuildKit. Docker builds, ARM64 execution and real-device push delivery are not claimed verified in this environment.
+
 ## Version 1.8: import Actual Budget
 
 Open **Transactions → Import Actual Budget**, or `/import/actual`. In Actual, use **Settings → Export data** and select
@@ -20,24 +142,32 @@ in SQLite. Both adapters use the same additive plan, conflict checks and balance
 the previous destination intact; a destination edit after review requires a new review. Existing transactions, receipts,
 statements, goals and reminder preferences are preserved. No migration is needed for existing v1.7 databases.
 
-| Actual data                            | Folio representation                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Accounts and starting-balance postings | Names prefixed `Actual ·`; starting amounts folded into opening balances                     |
-| Closed or off-budget accounts          | Ordinary manual accounts; source closed/off-budget behavior is not retained                  |
-| Payees, signed amounts, dates, notes   | Posting labels, positive income/expense amounts, civil dates and notes                       |
-| Split postings                         | Separate child postings with parent/child notes; grouping is not retained                    |
-| Reciprocal internal transfers          | One transfer with independent cleared flags on both account legs                             |
-| Categories                             | Flat catalog; hidden custom categories archived; built-in names reused                       |
-| Long or duplicate category names       | Stable suffixes within 40 characters; original names in review mappings                      |
-| Reconciled or cleared entries          | Cleared flags; no invented reconciliation statements or locks                                |
-| Nonnegative expense allocations        | Monthly overrides, including explicit zero; rollover disabled                                |
-| Simple schedules                       | Fixed exact amount, account and payee; one-time, weekly, monthly day 1–28 or ordinary yearly |
+| Actual data                            | Folio representation                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Accounts and starting-balance postings | Names prefixed `Actual ·`; starting amounts folded into opening balances                                     |
+| Closed or off-budget accounts          | Ordinary manual accounts; source closed/off-budget behavior is not retained                                  |
+| Payees, signed amounts, dates, notes   | Posting labels, positive income/expense amounts, civil dates and notes                                       |
+| Split postings                         | Separate child postings with parent/child notes; grouping is not retained                                    |
+| Reciprocal internal transfers          | One transfer with independent cleared flags on both account legs                                             |
+| Categories                             | Flat catalog; hidden custom categories archived; built-in names reused                                       |
+| Long or duplicate category names       | Stable suffixes within 40 characters; original names in review mappings                                      |
+| Reconciled or cleared entries          | Cleared flags; no invented reconciliation statements or locks                                                |
+| Nonnegative expense allocations        | Monthly overrides, including explicit zero; rollover disabled                                                |
+| Simple schedules                       | Exact amounts or reviewed approximate/range estimates; one-time, weekly, monthly day 1–28 or ordinary yearly |
 
-Imported schedules are **paused** and receive category `Other`; they send no reminders while paused and never auto-post.
-Review them in Recurring before resuming; reminder lead time defaults to zero. Only interval-one rules without patterns
-or weekend shifting and with no end or an explicit inclusive end date are supported. Variable/approximate amounts,
-transfer schedules, complex rule actions, month-end/leap-day dates and other recurrence options are excluded with reasons.
-Historical schedule links are retained only for matching exact occurrences. Other history remains as ordinary postings.
+Imported schedules are **paused**; safe plain category and notes actions carry over, otherwise category is `Other`.
+They send no reminders while paused and never auto-post. Review them in Recurring before resuming; reminder lead time
+defaults to zero. Exact account conditions are required; payees are optional. Internal transfer schedules require two
+available distinct accounts. Exact and approximate date conditions share the source date anchor, but Actual's matching
+tolerance is not recreated. Exact and approximate amounts use the source value; same-sign nonzero ranges use the signed
+rounded midpoint. Estimates and range endpoints remain in the schedule notes and complete review download.
+
+Only interval-one rules without patterns or weekend shifting, and with no end or an explicit inclusive end date, are
+supported. Daily/custom intervals, month-end/leap-day rules, counted endings, missing accounts, zero/cross-zero amount
+ranges, extra conditions and complex/template/formula actions are excluded with reasons. Plain set actions must leave
+the scheduled account, payee and amount unchanged. This preserves the source semantics rather than inventing dates.
+Historical schedule links are retained only for matching exact dates, amounts, types and account legs. Other history
+remains as ordinary postings. Adding a newly supported schedule never retroactively rewrites older imported postings.
 Audit timestamps use zero to indicate an unknown original creation time rather than inventing one.
 
 Groups, bank connections, tags, rules, reports, attachments, goal formulas and carryover are not migrated. Negative,
@@ -49,7 +179,8 @@ being silently truncated (category catalog names are adapted as described above)
 Stable UUIDv5 identities use Actual's cloud file ID when available, otherwise its local budget ID, plus record type and
 original ID. The same unchanged export with the same scope adds nothing on repeat. Edited previously imported records,
 changed openings or allocation conflicts block rather than overwrite; clearing and pause choices made after import are
-preserved. Keep the same budget identity and schedule option when importing later exports. A reset/cloned source budget
+preserved. Keep the same budget identity when importing later exports. Existing unlinked history can remain unlinked
+while adding schedules; omitting previously imported links or changing existing schedule definitions still conflicts. A reset/cloned source budget
 with a different identity is a different import; overlapping CSV/manual imports are not automatically matched.
 
 Limits: 25 MiB ZIP, 64 MiB expanded SQLite, 64 KiB metadata, one budget pair, 200 archive entries, 500 accounts,
@@ -171,7 +302,7 @@ goals, reconciliation identities and balances, bank-import identities, receipt p
 files up to 8 MiB with at most 10,000 rows in each collection and 2 MiB of receipt bytes. Failed validation or browser
 quota writes preserve the previous stored workspace. Notification settings, delivery history and appearance remain
 on the device. The full app exports portable JSON but restores complete SQLite backups using the server recovery steps;
-JSON import does not replace a server database.
+Version 1.9 adds reviewed financial JSON import on the server; use a complete SQLite backup for infrastructure recovery.
 
 For self-hosted upgrades, stop the backend, take an online SQLite backup, run `pnpm db:migrate`, then `pnpm db:check`
 and restart. Additive migration `0003_freezing_brother_voodoo.sql` adds only the receipt table and its index. Existing
@@ -259,7 +390,7 @@ added only as used. Export includes all planning records. Start fresh clears goa
   so transfers clear independently. Completed statements lock their postings against edit/delete/unclear actions.
   Undo only the latest statement for that account to release its locks while retaining cleared flags. History is
   chronological, and each account's next statement must have a later ending date.
-- Open the bell popover → **Timing, snoozes & overdue payments**, or use the link under Settings → Gentle reminders.
+- Open the bell popover → **Timing, snoozes & overdue payments**, or use the link under Settings → Browser & phone notifications.
   Save an IANA timezone, local delivery time, individual versus daily-digest mode and a 0–30-day overdue follow-up
   window. Upcoming, due-today and overdue reminders are distinct phases; unpaid overdue items can follow up daily.
   Snooze one occurrence for 1 or 24 hours without moving its financial due date. Paid occurrences never generate jobs.
@@ -327,7 +458,7 @@ the tsx import hook. Using the import hook avoids the tsx CLI's IPC socket requi
   remain the baseline for unconfigured months. Spending plans and goal progress never reserve account balances.
 - **Reports:** monthly/yearly/custom periods, account/category filters, previous-period comparisons and CSV exports.
 - **Settings:** accounts, reminders, light/dark/system appearance, installation and workspace export. JSON export is
-  a portable data copy with reviewed restore in the device-local preview. Restore SQLite for complete server recovery.
+  a portable data copy with reviewed financial import in both deployment modes. Restore SQLite for complete server recovery.
 
 The schedule expander caps each series at 5,000 occurrences to keep scans bounded. The API paginates postings in
 batches of at most 500; the UI loads all batches to calculate account balances and reports. This is a personal-volume
@@ -343,12 +474,11 @@ are independent copies, and calendar applications decide whether to honor alarms
 The self-hosted backend supports Web Push while the page is closed. Configure both VAPID keys and an operator contact:
 
 ```bash
-pnpm exec web-push generate-vapid-keys
+pnpm push:keys ./push.env mailto:you@example.com
 ```
 
-Put the values in the untracked `.env`, restart the backend, build/serve the PWA over HTTPS, then choose **Enable
-reminders** in Settings. Permission is requested only after that button action. This browser's subscription is stored
-in SQLite; **Turn off reminders** removes it and unsubscribes. Browser support varies; iOS requires installation for
+Put the values in the untracked `.env`, restart the backend, build/serve the PWA over HTTPS, then choose **Enable this device** under Settings → Browser & phone notifications. Permission is requested only after that button action. This browser's subscription is stored
+in SQLite; **Disconnect this device** removes it and unsubscribes. Browser support varies; iOS requires installation for
 Web Push. No subscription is created automatically.
 
 The backend must remain running. A bounded scan runs each minute, with the workspace’s selected local timezone and delivery-time boundary. Successful delivery
@@ -418,47 +548,51 @@ Planning months are first-of-month dates between 1900 and 9999. Allocations allo
 signed integers. Goal progress is bounded to 0–100,000,000,000 cents, independently of its target amount.
 `GET /planning` is unpaginated metadata for personal-volume use, as are the other small catalog collections.
 
-| Method and path under `/api/v1`                      | Behavior                                                                            |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `GET /health`                                        | Database-independent liveness                                                       |
-| `GET /ready`                                         | Checks required tables; 503 if storage is unavailable                               |
-| `GET /transactions?limit=200&offset=0`               | Deterministic date/ID order, bounded pagination                                     |
-| `POST /transactions`                                 | Create an actual posting                                                            |
-| `POST /transactions/bulk/preview`                    | Read-only review of `{ ids, action, category? }`; 1–100 unique IDs                  |
-| `POST /transactions/bulk/commit`                     | `{ selection, revision }`; atomically apply the unchanged review                    |
-| `PUT, DELETE /transactions/:id`                      | Replace or delete an actual posting                                                 |
-| `GET, POST /accounts`                                | List accounts or create one with an opening balance                                 |
-| `GET, POST /recurring`                               | List or create one-time/repeating plans                                             |
-| `PUT, DELETE /recurring/:id`                         | Update or remove a schedule                                                         |
-| `POST /recurring/:id/pay`                            | Body `{ date }`; validate and idempotently post occurrence                          |
-| `GET, PUT /budgets`                                  | List limits or upsert `{ category, amount }`                                        |
-| `POST /planning/budget-copy/preview`                 | Review `{ fromMonth, toMonth, mode }` without writes                                |
-| `POST /planning/budget-copy/commit`                  | Add the returned `revision`; atomically apply a current review                      |
-| `GET, POST /transactions/:transactionId/attachments` | List metadata or upload `{ id, name, mimeType, size, content }`                     |
-| `GET, DELETE /attachments/:id`                       | Download encoded bytes or remove an unlocked attachment                             |
-| `POST /imports/actual/preview`                       | Read-only native conversion review; `{ file, currencyConfirmed: true }`             |
-| `POST /imports/actual/commit`                        | Same normalized file and consent plus reviewed SHA-256 `revision`; atomic additions |
-| `GET /workspace/export`                              | Read one consistent financial snapshot including receipt bytes                      |
-| `GET /schedules`                                     | Read pause/end-date settings and skipped occurrences                                |
-| `PUT /schedules/settings`                            | Save `{ recurringId, isPaused, endDate }`                                           |
-| `PUT /schedules/occurrences`                         | Save `{ recurringId, date, isSkipped }` for a valid date                            |
-| `GET /planning`                                      | Monthly overrides, custom categories, goals and contributions                       |
-| `PUT /planning/monthly-budgets`                      | Upsert `{ month, category, amount, rollover }` for one month                        |
-| `POST /planning/categories`                          | Create an immutable custom name                                                     |
-| `PUT /planning/categories/:id`                       | Body `{ isArchived }`; archive or restore a custom category                         |
-| `POST /planning/goals`                               | Create `{ name, targetAmount, targetDate, isArchived }`                             |
-| `PUT /planning/goals/:id`                            | Edit or archive a goal without losing progress                                      |
-| `POST /planning/goals/:id/contributions`             | `{ id, amount, date, notes }`; signed cents, idempotent UUID                        |
-| `POST /imports/preview`, `/imports/commit`           | Review or atomically commit a capped statement batch                                |
-| `GET /reconciliation`                                | Read clearing flags, statement history and import identities                        |
-| `PUT /reconciliation/clearance`                      | Clear or unclear one account leg                                                    |
-| `POST /reconciliation`                               | Verify an exact statement balance and protect its entries                           |
-| `DELETE /reconciliation/:id`                         | Undo only the account's latest completed statement                                  |
-| `GET /notifications/state`                           | Preferences, snoozes and safe provider delivery history                             |
-| `PUT /notifications/preferences`                     | Validate/save timezone, local time, cadence and overdue window                      |
-| `POST /notifications/snooze`                         | Snooze a valid unpaid occurrence for 60 or 1440 minutes                             |
-| `GET /notifications/config`                          | Public VAPID key and capability state                                               |
-| `POST, DELETE /notifications/subscriptions`          | Explicit browser subscription opt-in/out                                            |
+| Method and path under `/api/v1`                      | Behavior                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `GET /health`                                        | Database-independent liveness                                                                     |
+| `GET /ready`                                         | Checks required tables; 503 if storage is unavailable                                             |
+| `GET /transactions?limit=200&offset=0`               | Deterministic date/ID order, bounded pagination                                                   |
+| `POST /transactions`                                 | Create an actual posting                                                                          |
+| `POST /transactions/bulk/preview`                    | Read-only review of `{ ids, action, category? }`; 1–100 unique IDs                                |
+| `POST /transactions/bulk/commit`                     | `{ selection, revision }`; atomically apply the unchanged review                                  |
+| `PUT, DELETE /transactions/:id`                      | Replace or delete an actual posting                                                               |
+| `GET, POST /accounts`                                | List accounts or create one with an opening balance                                               |
+| `GET, POST /recurring`                               | List or create one-time/repeating plans                                                           |
+| `PUT, DELETE /recurring/:id`                         | Update or remove a schedule                                                                       |
+| `POST /recurring/:id/pay`                            | Body `{ date }`; validate and idempotently post occurrence                                        |
+| `GET, PUT /budgets`                                  | List limits or upsert `{ category, amount }`                                                      |
+| `POST /planning/budget-copy/preview`                 | Review `{ fromMonth, toMonth, mode }` without writes                                              |
+| `POST /planning/budget-copy/commit`                  | Add the returned `revision`; atomically apply a current review                                    |
+| `GET, POST /transactions/:transactionId/attachments` | List metadata or upload `{ id, name, mimeType, size, content }`                                   |
+| `GET, DELETE /attachments/:id`                       | Download encoded bytes or remove an unlocked attachment                                           |
+| `POST /imports/actual/preview`                       | Read-only native conversion review; `{ file, currencyConfirmed: true }`                           |
+| `POST /imports/actual/commit`                        | Same normalized file and consent plus reviewed SHA-256 `revision`; atomic additions               |
+| `POST /workspace/import/preview`                     | Validate a complete JSON financial workspace; review replacement counts without writes            |
+| `POST /workspace/import/commit`                      | `{ data, revision, confirmation: "REPLACE" }`; atomic financial replacement with paused schedules |
+| `GET /workspace/export`                              | Read one consistent financial snapshot including receipt bytes                                    |
+| `GET /schedules`                                     | Read pause/end-date settings and skipped occurrences                                              |
+| `PUT /schedules/settings`                            | Save `{ recurringId, isPaused, endDate }`                                                         |
+| `PUT /schedules/occurrences`                         | Save `{ recurringId, date, isSkipped }` for a valid date                                          |
+| `GET /planning`                                      | Monthly overrides, custom categories, goals and contributions                                     |
+| `PUT /planning/monthly-budgets`                      | Upsert `{ month, category, amount, rollover }` for one month                                      |
+| `POST /planning/categories`                          | Create an immutable custom name                                                                   |
+| `PUT /planning/categories/:id`                       | Body `{ isArchived }`; archive or restore a custom category                                       |
+| `POST /planning/goals`                               | Create `{ name, targetAmount, targetDate, isArchived }`                                           |
+| `PUT /planning/goals/:id`                            | Edit or archive a goal without losing progress                                                    |
+| `POST /planning/goals/:id/contributions`             | `{ id, amount, date, notes }`; signed cents, idempotent UUID                                      |
+| `POST /imports/preview`, `/imports/commit`           | Review or atomically commit a capped statement batch                                              |
+| `GET /reconciliation`                                | Read clearing flags, statement history and import identities                                      |
+| `PUT /reconciliation/clearance`                      | Clear or unclear one account leg                                                                  |
+| `POST /reconciliation`                               | Verify an exact statement balance and protect its entries                                         |
+| `DELETE /reconciliation/:id`                         | Undo only the account's latest completed statement                                                |
+| `GET /notifications/state`                           | Preferences, snoozes and safe provider delivery history                                           |
+| `PUT /notifications/preferences`                     | Validate/save timezone, local time, cadence and overdue window                                    |
+| `POST /notifications/snooze`                         | Snooze a valid unpaid occurrence for 60 or 1440 minutes                                           |
+| `POST /notifications/subscriptions/status`           | Check whether this device endpoint is registered; returns no keys                                 |
+| `POST /notifications/test`                           | Test only the registered current device; persistent 30-second cooldown                            |
+| `GET /notifications/config`                          | Public VAPID key, capability state and registered-device count                                    |
+| `POST, DELETE /notifications/subscriptions`          | Explicit browser subscription opt-in/out                                                          |
 
 The client uses a public typed base URL, cancellation, bounded request timeouts, no-store fetches and normalized
 network errors. It does not cache server financial data in browser storage. A network error never selects demo mode.

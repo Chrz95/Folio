@@ -11,8 +11,9 @@ function unique(values: string[]) {
   }
 }
 /** Verify graph links, category history, statement locks and file quotas before restoring.
- * @param {RestorableWorkspace} data - Structurally valid workspace. @returns {void} Domain validation. */
-export function validateBackupRelations(data: RestorableWorkspace) {
+ * @param {RestorableWorkspace} data - Structurally valid workspace.
+ * @param {number} maximumReceiptBytes - Destination attachment capacity. @returns {void} Domain validation. */
+export function validateBackupRelations(data: RestorableWorkspace, maximumReceiptBytes: number = RECEIPT.previewBytes) {
   [
     data.accounts,
     data.transactions,
@@ -141,12 +142,12 @@ export function validateBackupRelations(data: RestorableWorkspace) {
   }
   if (
     data.receipts.some((entry) => !transactionById.has(entry.transactionId)) ||
-    data.receipts.reduce((sum, entry) => sum + entry.size, 0) > RECEIPT.previewBytes ||
+    data.receipts.reduce((sum, entry) => sum + entry.size, 0) > maximumReceiptBytes ||
     data.transactions.some(
       (entry) => data.receipts.filter((row) => row.transactionId === entry.id).length > RECEIPT.perTransaction,
     )
   ) {
-    throw new Error('Attachments exceed preview limits or refer to a missing transaction.');
+    throw new Error('Attachments exceed destination limits or refer to a missing transaction.');
   }
 }
 const BANK_ID_PARTS = 3;

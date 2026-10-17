@@ -15,3 +15,6 @@ artifacts
 .vscode
 .openai
 .sites-runtime
+
+# Private notification signing configuration
+push.env

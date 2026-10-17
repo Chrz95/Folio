@@ -12,3 +12,6 @@ data/
 coverage/
 .sites-runtime/
 artifacts/
+
+# Private notification signing configuration
+push.env

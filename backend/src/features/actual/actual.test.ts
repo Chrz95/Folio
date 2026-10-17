@@ -9,7 +9,7 @@ import { applyMigrations } from '../../db/migrations.js';
 import { loadEnvironment, parseDatabaseEnvironment } from '../../app/config/environment.js';
 import { createApp } from '../../app/createApp.js';
 import { createLogger } from '../../lib/logger/logger.js';
-import { accounts, transactions } from '../../db/schema/budget.js';
+import { accounts, transactions, recurring } from '../../db/schema/budget.js';
 import { receipts } from '../../db/schema/receipts.js';
 import { scheduleSettings } from '../../db/schema/schedules.js';
 import { actualFixture } from '../../../../scripts/actualFixtures';
@@ -106,6 +106,46 @@ describe('atomic native Actual import API on file-backed SQLite', () => {
       .send({ ...input, revision: repeated.revision })
       .expect(200);
     expect(postings()).toHaveLength(5);
+  });
+  it('adds approximate recurring rules after a legacy import without rewriting its postings', async () => {
+    const source = actualFixture();
+    const conditions = JSON.parse(String(source.rules[0]!.conditions));
+    conditions[2].op = 'isapprox';
+    conditions[3].op = 'isapprox';
+    source.rules[0]!.conditions = JSON.stringify(conditions);
+    const updatedFile = convertActual(source, JSON.stringify({ id: 'upgrade-fixture' }));
+    const current = { file: updatedFile, currencyConfirmed: true };
+    const old = {
+      ...current,
+      file: {
+        ...updatedFile,
+        recurring: [],
+        scheduleSettings: [],
+        transactions: updatedFile.transactions.map((row) => ({ ...row, recurringId: null })),
+      },
+    };
+    const initial = (await request(app()).post(`${path}/preview`).send(old).expect(200)).body.data;
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...old, revision: initial.revision })
+      .expect(200);
+    const before = postings();
+    const preview = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    expect(preview.added).toMatchObject({ transactions: 0, recurring: 1, scheduleSettings: 1 });
+    expect(postings()).toEqual(before);
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...current, revision: preview.revision })
+      .expect(200);
+    expect(postings()).toEqual(before);
+    expect(client.database.select().from(recurring).all()[0]).toMatchObject({ amount: 300, frequency: 'monthly' });
+    expect(client.database.select().from(scheduleSettings).all()[0]!.isPaused).toBe(true);
+    client.sqlite.close();
+    client = openDatabase({ filePath: resolve(directory, 'app.sqlite'), busyTimeout: 0 });
+    expect(postings()).toEqual(before);
+    expect(client.database.select().from(recurring).all()[0]!.notes).toContain('fixed estimate');
+    const repeated = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    expect(Object.values(repeated.added).every((count) => count === 0)).toBe(true);
   });
   it('rejects stale reviews after a destination edit and forged revisions without partial writes', async () => {
     const preview = await review();

@@ -7,7 +7,7 @@ map $uri $static_cache_policy {
 server {
  listen ${NGINX_PORT};
  server_tokens off;
- client_max_body_size 8m;
+ client_max_body_size 16m;
  root /usr/share/nginx/html;
  index index.html;
  gzip on;

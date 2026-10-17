@@ -9,6 +9,12 @@ import { HTTP } from '../../constants/http.constants.js';
 export function createErrorHandler(logger: Logger): ErrorRequestHandler {
   return (error: unknown, request, response, _next) => {
     const requestId = response.getHeader('X-Request-Id');
+    if (error instanceof Error && 'type' in error && error.type === 'entity.too.large') {
+      response.status(HTTP.tooLarge).json({
+        error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request exceeds this endpoint’s upload limit.', requestId },
+      });
+      return;
+    }
     if (error instanceof ZodError) {
       response.status(HTTP.badRequest).json({
         error: {

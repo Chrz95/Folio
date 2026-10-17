@@ -108,13 +108,10 @@ describe('native Actual exports and additive conversion', () => {
     source.category_mapping.push({ id: 'food', transferId: 'old' });
     expect(() => convertActual(source, metadata)).toThrow(/cycle/);
   });
-  it.each(['variable', 'month-end', 'weekend', 'extra-condition', 'end'])('lists unsupported %s schedules', (kind) => {
+  it.each(['month-end', 'weekend', 'extra-condition', 'end'])('lists unsupported %s schedules', (kind) => {
     const source = actualFixture();
     const rule = source.rules[0]!;
     const conditions = JSON.parse(String(rule.conditions));
-    if (kind === 'variable') {
-      conditions[3].op = 'isapprox';
-    }
     if (kind === 'month-end') {
       conditions[2].value.start = '2026-10-31';
     }
