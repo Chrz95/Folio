@@ -1,0 +1,14 @@
+node_modules/
+**/dist/
+data/
+.test-data/
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db*
+*.backup
+*.log
+coverage/
+.sites-runtime/
+artifacts/

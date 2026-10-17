@@ -1,0 +1,70 @@
+.bulk-toolbar,
+.bulk-review {
+  padding: 22px;
+  border-bottom: 1px solid var(--border);
+}
+.bulk-toolbar p,
+.bulk-review p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.bulk-selection-actions,
+.bulk-action-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.bulk-action-form {
+  align-items: end;
+  margin-top: 16px;
+}
+.bulk-action-form label {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 160px;
+  font-size: 0.85rem;
+}
+.bulk-review .review-table-scroll {
+  margin: 18px 0;
+}
+.bulk-review > .button {
+  margin-top: 18px;
+}
+.bulk-delete-warning {
+  border-left: 3px solid #b36850;
+  padding: 10px 14px;
+  background: var(--background);
+}
+.ledger-row-content {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.ledger-row-content .transaction-name {
+  min-width: 0;
+}
+.transaction-checkbox {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  accent-color: var(--green);
+}
+.transaction-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.bulk-review .button.danger {
+  background: #913f2f;
+  color: #fff;
+}
+
+.transaction-check-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--touch);
+  min-height: var(--touch);
+}

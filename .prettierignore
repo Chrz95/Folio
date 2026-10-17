@@ -1,0 +1,7 @@
+node_modules
+**/dist
+pnpm-lock.yaml
+backend/src/db/migrations/meta
+artifacts
+.openai
+frontend/public/screenshots

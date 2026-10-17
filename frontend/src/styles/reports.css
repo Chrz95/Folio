@@ -1,0 +1,136 @@
+.report-filters {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.report-date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.report-date-filters label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  flex: 1 1 180px;
+}
+.report-date-filters input,
+.report-date-filters select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.report-results {
+  display: grid;
+  gap: 22px;
+}
+.report-caption {
+  text-align: left;
+  padding-bottom: 14px;
+  color: var(--muted);
+}
+.report-trend:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+.report-scope-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.report-scope-note strong {
+  color: var(--text);
+}
+.report-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.report-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.report-summary .summary-card p {
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.report-trend {
+  max-height: 430px;
+  overflow: auto;
+  padding: 0 20px 20px;
+}
+.report-trend table {
+  width: 100%;
+  min-width: 430px;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.report-trend th,
+.report-trend td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.report-trend thead {
+  color: var(--muted);
+}
+.report-trend td {
+  width: 35%;
+  font-variant-numeric: tabular-nums;
+}
+.report-bar {
+  display: block;
+  height: 5px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+.report-bar.income {
+  background: #6c8d5b;
+}
+.report-bar.expense {
+  background: #be9258;
+}
+.report-category-comparison {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.report-category-comparison > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.report-category-comparison > b {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+}
+.report-category-comparison progress {
+  display: block;
+  width: 100%;
+  grid-column: 2;
+  grid-row: 2;
+}
+.report-category-comparison > span:not(.category-icon) {
+  grid-column: 3;
+  grid-row: 2;
+}
+.report-category-comparison small {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  color: var(--muted);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .report-summary {
+    grid-template-columns: 1fr;
+  }
+}

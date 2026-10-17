@@ -1,0 +1,304 @@
+# Verification and requirement resolutions
+
+Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
+passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
+
+## Version 1.8 verification
+
+189 tests in twenty-six files pass. The 31 new tests cover native root/nested ZIP exports containing real isolated
+file-backed SQLite sources, exact balance reconciliation, opening balances, split/transfer conversion, source mappings,
+stable legacy IDs, corrupt/oversized inputs, explicit schedule exclusions, duplicate keys and changed imported records.
+Worker controller tests verify byte transfer, validated replies, cancellation and deadline termination.
+
+File-backed HTTP integration tests cover read-only preview, additive related inserts, existing transaction/receipt
+preservation, reopen persistence, repeat imports adding zero, resumed schedule preservation, stale/forged revisions,
+missing currency consent, malformed graphs and source balance mismatch. A trigger rejecting a later posting verifies
+rollback of earlier account/category/schedule/posting writes. Preview UI tests use actual storage and merge logic,
+with parsing tested separately: currency/final consent, complete review download, duplicate review, scope invalidation,
+optional allocation/schedule exclusion, stale destination detection, quota-failure recovery and selection cancellation.
+
+The official `actualbudget/wrapped` public demo native ZIP was independently decoded: 8 accounts, 359 postings,
+14 new custom categories, 46 monthly allocations and 359 clearing flags. All source balances match the converted
+all-recorded ledger. Repeating the identical source adds zero rows. Four complex/approximate schedules are explicitly
+excluded. Only public demo and fictional test data are used; none are imported into the host runtime database.
+
+Lint with zero warnings, strict frontend/backend/worker types, formatting, named-source JSDoc, 120-character source lines,
+100-line component limits, default production build and PWA artifact checks pass. Artifact verification checks that the
+native worker references the emitted WASM and both appear in the service-worker precache. No schema migration is needed.
+A separately migrated SQLite test database also served the compiled production API over real HTTP. The public demo
+review wrote nothing; commit inserted 359 postings and 8 accounts, preserved a pre-existing posting, and survived reopen.
+Repeat review added nothing; a subsequent destination edit invalidated the old revision with HTTP 409. SIGTERM exited
+zero and logged that HTTP and SQLite closed. The test database was cleaned up afterward.
+
+The native reader queries only allowlisted physical tables read-only; SQL.js is a transient file decoder, while persistent
+self-hosted data continues to use real SQLite through better-sqlite3. The existing browser-local hosted preview exception
+continues to be explicitly labelled. Full feature mappings and excluded source semantics are documented in README.
+
+Browser visual/real-device checks, Docker execution and real Web Push delivery remain unverified. jsdom workflow tests
+do not establish real browser layout, native ZIP download/upload compatibility, device memory limits or CSP execution.
+Docker config/build/start/stop, image/non-root inspections, nginx proxy and volume replacement checks were not rerun here.
+
+## Version 1.7 verification
+
+158 tests in twenty-two files pass. New file-backed SQLite HTTP tests cover read-only bulk review without receipt bytes,
+category-only edits preserving financial fields and audit identities, durable reopen persistence, deletion cascades,
+preserved accounts/schedules/unselected rows and re-posting a deleted recurring occurrence. Destination-leg statement
+locks, edited or removed postings, changed receipt/clearance/import metadata, archived targets, duplicate IDs, malformed
+inputs, excessive batch sizes and forged revisions reject without partial changes. Trigger-induced failures on later
+category writes and deletions restore earlier writes, supporting file bytes and cascaded import identities.
+
+Preview workflow tests use actual workspace loading and storage, review before commit, explicit permanent-delete
+acknowledgment, locked row protection, category changes retaining audit fields and links, deletion metadata cleanup and
+recurring-date eligibility. Selection resets on every ledger scope filter; refreshed data hides old reviews. Fresh
+storage rejects stale reviews and late locks. Failed storage writes preserve all previous data and allow a newly
+reviewed retry. Select-all is bounded to 100 visible editable entries. Canonical server/preview plans match despite
+input key or selection order differences. The full existing suite remains green.
+
+Lint, strict frontend/backend/worker types, formatting, named-source JSDoc, component/TypeScript line limits, production
+builds and manifest/icon/service-worker artifact checks pass. A separately migrated test database was used to launch
+the compiled production server. Real HTTP calls verified read-only review, category commit retaining audit timestamps,
+stale-review rejection and deletion; the database was reopened to verify persistence. SIGTERM exited 0 and confirmed
+that HTTP and SQLite closed. No schema migration, new dependency or runtime host-data change was needed.
+
+Browser visual/real-device checks, Docker execution and real Web Push delivery remain unverified. UI workflows are
+covered in jsdom; actual browser layout and interactions still need real-device verification.
+
+## Version 1.6 verification
+
+137 tests in twenty files pass. New report arithmetic checks cover January/year boundaries, leap-day month ends,
+calendar-year comparisons, equal inclusive custom spans across the Athens daylight-saving transition, one-day spans,
+invalid/oversized ranges, exact combined scopes, transfer exclusion, signed/zero/negative comparisons and empty chart
+intervals. CSV tests cover current and previous-only category rows, exact money differences, scope metadata, quoted
+labels and formula protection while preserving trusted signed numbers.
+
+Browser-local workflow tests load the actual preview workspace and verify monthly/yearly/custom totals, future-dated
+actual postings, unpaid-schedule exclusion, exact archived-category/account filters, both export actions, chart data,
+previous-only categories, restored report URLs with a different global month, unavailable bookmarked scopes and blocked
+results/downloads for invalid ranges. The source convention scanner finds no undocumented named functions; component
+and TypeScript line limits pass. Lint, frontend/backend/worker strict types, formatting, the default frontend/compiled
+backend production build, and manifest/icon/service-worker artifact checks pass. The schema and dependencies are
+unchanged, and no runtime financial data is modified by reporting.
+
+Browser visual/real-device checks, Docker execution and real Web Push delivery remain unverified. The reporting UI is
+covered by jsdom interaction tests; those tests do not establish real browser layout or download compatibility.
+
+## Version 1.5 verification
+
+116 tests in eighteen files pass. New real SQLite tests cover durable pause/resume, acknowledged payment retries while
+paused, inclusive end dates, invalid start/end changes, idempotent skip/restore, paid-date protection, skipped-date
+reset only on anchor/frequency changes, cascade behavior and snapshot exports. A fake provider pauses another schedule
+during a scan; the remaining queued send is suppressed without contacting a real provider.
+
+Preview workflow tests exercise the actual save/refresh path, pause/resume, skipped-date restoration, calendar cells,
+forecast/reminder suppression, inclusive limits, retained paid history, backup validation, legacy preview fields and
+preserved audit timestamp/schedule links on edits. Existing forecast, calendar expansion, reminder, receipt, import,
+reconciliation, planning and recovery checks continue to pass. Lint, strict types and source conventions are checked.
+A consistent backup preceded migration 0004. Exact rows in all seventeen existing financial/metadata tables,
+including receipt contents, match the backup; readiness verifies nineteen tables. The compiled server was launched
+against a separate fresh database. Real HTTP checks enforced pause/skip state, retained acknowledged payment retries,
+validated exported controls through the preview backup validator and confirmed SIGTERM exit 0 with SQLite closed.
+Production builds and manifest/icon/service-worker checks pass. The frontend build explicitly clears only its generated
+output before the PWA precache scan, preventing older build assets from being carried into the release cache.
+
+Browser visual/real-device tests, Docker execution and real Web Push delivery remain unverified.
+
+## Version 1.4 verification
+
+103 tests in sixteen files pass. New SQLite tests cover upload retries and conflicts, metadata-only lists, persistence
+after reopen, allowed signatures, spoofed/invalid payloads and names, file-count/byte quotas, statement locks and
+acknowledged retries after locking, transaction deletion cascade and receipt inclusion in online backups. UI tests
+exercise actual file selection, upload, download, removal, storage-failure retry and protected downloads. Backup tests
+round-trip versioned and legacy exports, receipt bytes, damaged structures, missing/duplicate links, goal and statement
+validation, read-only selection/review, cancellation, explicit replacement, stale reviews and quota failures.
+
+A consistent host database backup was taken before migration 0003. Readiness verifies all seventeen tables, and
+accounts, actual postings, schedules, caps, monthly overrides, goals and reconciliation row counts match the backup.
+Migration 0003 creates a receipt table and index without rebuilding existing tables. No dependencies were added.
+The default frontend/compiled-backend production build and manifest/icon/service-worker artifact checks pass.
+A separately migrated file was used to launch the compiled server. Real HTTP checks verified upload retry deduplication,
+metadata-only listing, exact byte downloads, a consistent JSON snapshot accepted by the preview restore validator,
+transaction deletion cascade and graceful SIGTERM exit 0 with SQLite closed.
+
+Browser visual/real-device checks, Docker execution and real Web Push delivery remain unverified.
+
+## Version 1.3 verification
+
+87 tests in thirteen files pass. The budget-copy HTTP tests use isolated file-backed SQLite to verify read-only
+review, default preservation, explicit replacement, zero allocations, archived-category skips, source/destination
+staleness, strict input validation and rollback after a trigger rejects a later batch write. Browser-local UI tests
+exercise review/commit, policy-change invalidation and stale snapshots. The same tests verify exact archived-category
+filtering, combined account scope, filtered CSV export, active-category correction on duplication and retained
+historical category edits. Lint, strict type checking, named-source JSDoc, 120-character TypeScript lines and the
+100-line component cap are checked. The schema and dependency versions are unchanged.
+
+The default frontend/compiled-backend build and manifest/icon/service-worker artifact verification pass. A separately
+migrated test file was used to launch the compiled production server: real HTTP calls verified read-only copy review,
+successful allocation copying, preserved actual postings and stale-review conflict responses. SIGTERM exited 0 and
+logged that HTTP and SQLite were closed. Browser visuals, Docker execution and real push delivery remain unverified.
+
+## Version 1.2 verification
+
+Monthly allocation overrides and positive rollover now feed both Budgets and the Overview. Savings goals include
+signed progress journals and archive/restore. Custom names flow through entry, monthly planning and CSV mapping.
+Merchant suggestions and duplication retain user choices and never alter the source posting or its audit links.
+
+77 tests in thirteen files pass. New coverage includes an actual populated-v1.1 SQLite upgrade, exact-month/zero
+allocations, case-insensitive catalog duplicates, archived historical categories, scheduled posting after archive,
+custom/forged import categories, idempotent contributions, signed withdrawals, archived-goal retries, bounded/negative
+progress and persistence after reopening. Pure arithmetic checks cover chained/year-boundary rollover, missing/disabled
+months, overspending, corrected historical expenses and goal calendar-month pace. Browser-local UI tests exercise
+budget editing/navigation, goal create/contribute/withdraw/archive/restore, category availability, duplication and
+merchant defaults through real workspace persistence. Failed preview mutations leave stored data unchanged.
+
+The compiled production server also started against a separate freshly migrated file. Real HTTP smoke checks created
+an account, custom category, month budget, actual transaction and goal; retried one contribution without duplication;
+confirmed goal progress created no extra financial posting; and verified graceful SIGTERM exit 0 with SQLite closed.
+The default full-stack production build and manifest/icon/service-worker artifact checks pass.
+
+The host database was backed up before applying additive migration 0002; readiness verifies all sixteen tables.
+No previous table or migration is rewritten. The same private Site and preview storage key are retained.
+Browser visual/real-device checks, Docker execution and real Web Push delivery remain unverified as described below.
+
+## Version 1.1 verification
+
+The upgrade adds account-aware daily cash-flow forecasts, reviewed bank CSV imports, duplicate/manual-transfer
+matching, per-account statement reconciliation and timezone-aware reminder preferences/snoozes/history. The existing
+preview URL and owner-only audience are retained. Existing v1 browser workspaces remain readable.
+
+Executed new checks include a populated-v1 migration with original balances/recurring links intact, atomic import
+rollback, retry deduplication, two-sided transfer matching, independent clearing, exact statement arithmetic,
+reconciliation locks/latest-only undo, invalid timezone/time validation, unpaid-occurrence snoozes, DST transitions,
+provider acknowledgment persistence across database reopen, and bounded failed-delivery retries. Forecast and CSV
+format edge cases are tested. UI workflow tests exercise sample upload/mapping/review/import, duplicate review,
+reconciliation of imported cleared entries, and reminder preference persistence through the actual demo adapter.
+
+Provider delivery tests inject a fake sender; they do not send real notifications. Docker, a real browser, real Web
+Push permissions/providers, installation and offline/update lifecycle audits remain unavailable/unverified. No new
+claim is made for those checks. The schema upgrade is additive; no previous table is dropped or rebuilt.
+
+## Executed successfully
+
+- Root dependency installation with a committed lockfile and explicitly allowed native dependency builds.
+- Native better-sqlite3 load; installed version 13.0.3 reports SQLite 3.53.4.
+- Drizzle generation of the initial reviewed schema, explicit migration, readiness check and idempotent development seed.
+- Actual connections verified foreign keys ON, WAL, FULL synchronous durability and a 5000ms host busy timeout.
+- Strict frontend/backend/worker type checking; both static frontend and compiled backend production builds.
+- Oxlint with `--deny-warnings`: zero errors and zero warnings after supported-rule adjustments.
+- Prettier formatting; source component size and manually maintained TypeScript line-length inspection.
+- 189 deterministic tests in twenty-six files, including file-backed SQLite persistence and frontend interactions.
+- Production manifest/icon/service-worker artifact verification.
+
+The test suite covers HTTP validation and errors, security headers, CORS, pagination, accounts, budgets, constraints,
+readiness failure independently of liveness, missing/unmigrated storage, CRUD, file reopen persistence, rollback,
+bounded writer contention, backup restore into a separate file, idempotent/clamped recurring payments, one-time plans,
+transfer arithmetic, editor integer money conversion, failed writes, offline state and user-driven installation.
+Tests create isolated real SQLite files, close handles, and remove only test-owned directories. No memory database is used.
+
+## Explicit requirement resolutions
+
+### Hosting versus the requested server stack
+
+Sites runs static assets or Workers, and cannot run this application's long-lived Express/better-sqlite3 process with
+persistent local storage. The full source retains Express, Drizzle and SQLite without substituting another production
+database. The hosted URL is a separate browser-local preview compiled with `VITE_DEMO_MODE=true`. A visible banner and
+Settings explain that data stays on the device. Full-stack builds default to false and never fall back on API failure.
+Preview storage is therefore an explicit preview-only exception to the attachment's SQLite-only persistence rule.
+
+The single-user backend binds to loopback by default and has no built-in authentication. Use a private network or a
+real authentication proxy with TLS before remote access. This is not a public multi-user financial service.
+
+### Toolchain compatibility
+
+The latest TypeScript 7 native executable failed in this restricted environment because `/proc/self/exe` was unavailable.
+TypeScript 5.9.3 was selected and passed actual type checks. Other dependency versions are pinned in the root manifest.
+pnpm 11.25.0 is the environment-supported pinned version; later releases exist but were not substituted mid-build.
+
+pnpm 11 ignores dependency-build settings in `package.json`. `pnpm-workspace.yaml` contains only `allowBuilds` for
+better-sqlite3 and esbuild. It declares no package globs, package manifests, or multi-package workspace. This is the
+configuration-only exception required to install native dependencies with the selected pnpm version.
+
+### Oxlint adjustments
+
+Plugins `typescript`, `react`, `import`, and `jsx-a11y` are enabled. The requested JSX filename extension value is
+changed from `.js` to `.tsx` at error severity. `no-magic-numbers` is added with 0, 1 and -1 exemptions and scoped
+constant/config/test overrides. Generated migration output and build artifacts are excluded. No console exemption is
+needed: application logging uses pino. No requested supported rule has had its severity reduced.
+
+Installed Oxlint 1.88.0 rejected these five requested rule names, so they were removed rather than falsely accepted:
+
+| Unsupported rule                          | Review alternative                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `camelcase`                               | Manual descriptive naming and camelCase/PascalCase review                   |
+| `react/destructuring-assignment`          | Destructured functional component props; explicit ErrorBoundary class props |
+| `react/forbid-foreign-prop-types`         | TypeScript props; no runtime PropTypes objects                              |
+| `react/no-deprecated`                     | Modern functional React APIs; the error boundary uses supported class APIs  |
+| `react/no-unused-class-component-methods` | Only required error-boundary class lifecycle/render methods exist           |
+
+Oxlint has no reliable magic-string rule. Fixed domains use TypeScript unions, named route/storage/interval catalogs
+and contextual single-use labels. Numeric logic is checked by the actual linter. `inspectConventions.mjs` checks named
+source declarations for JSDoc; it does not prove the semantic quality of every anonymous callback or string choice.
+
+Every application component file is within 100 lines after formatting. Source TypeScript/TSX uses a 120-character
+limit. Generated migration SQL/metadata and the lockfile retain tool-generated formatting and can contain longer lines.
+Infrastructure contains meaningful named settings, but some low-level nginx/Docker literals remain documented rather
+than mechanically linted; there is no claim of a universal no-literal proof.
+
+### Docker choices and checks unavailable
+
+Chosen exact image tags: `node:24.19.0-bookworm-slim` for compatible native-driver build/runtime libc, and
+`nginxinc/nginx-unprivileged:1.28.2-alpine` for the static frontend. Release image digests have not been resolved or
+verified; supply verified digest-pinned overrides before release. No image size is claimed because no image was built.
+
+The Compose application has three services, with embedded SQLite and a persistent named volume. Frontend-only
+libraries are dev dependencies; production dependencies contain compiled backend runtime packages. `--wait` applies
+only to long-running services after a fresh exclusive migration succeeds, avoiding one-shot wait ambiguity. Compose
+2.20+ is required. Runtime UIDs are 1000 for backend/migrate and 101 for nginx. Source inspection covered volume
+ownership, named settings, same-origin proxying, non-root execution, read-only filesystems and no-secret build contexts.
+
+The following required root commands were attempted and failed solely because the Docker executable is absent:
+
+- `pnpm docker:config`
+- `pnpm docker:build`
+- `pnpm docker:up`
+- `pnpm docker:down`
+
+Consequently, all of these container-specific checks remain unverified:
+
+1. Compose schema acceptance, image-tag availability, image builds and image sizes.
+2. Container-native better-sqlite3 loading in backend and migrate targets.
+3. Actual runtime numeric UIDs, permissions on a fresh named volume and bind-mounted directory provisioning.
+4. Image contents/history, absence of secrets/dev tools in layers, and vulnerability scans.
+5. nginx configuration templating, read-only startup, API proxy/CSP/cache headers and SPA deep links.
+6. Migration job success/order, refusal to migrate a running container, health-based startup and `--wait` behavior.
+7. SIGTERM timing, exit code and HTTP/SQLite shutdown logs inside the container.
+8. Container replacement persistence and normal down/up preservation of WAL/SHM/database files.
+9. Runtime readiness/liveness through nginx and actual inaccessible/unmigrated mounted storage behavior.
+10. Image digest pinning and release promotion on the intended target architecture.
+
+Equivalent database constraints, durability settings, backup/restore and readiness failures were tested on actual
+host file-backed connections. They are not substitutes for executing the listed container checks.
+
+### PWA/browser checks unavailable
+
+The supported browser-control skill was unavailable, so no browser preview server or improvised browser was launched.
+The following are not verified: visual layouts at 360/768/1280px, real keyboard/touch navigation, contrast compliance,
+real iOS behavior, installation, first offline load, upgrade notification/reload across deployments, and browser cache
+inspection. Install/connectivity hooks and the editor were tested in jsdom; service-worker update hooks do not have
+complete browser-level integration coverage. No Lighthouse performance/accessibility/best-practices/SEO scores or
+PWA installability result is claimed. The required Lighthouse audit against Docker cannot run without Docker/browser QA.
+
+The valid manifest omits narrow/wide screenshots instead of shipping fabricated screenshot assets. It therefore lacks
+the requested richer install presentation. SVG/PNG/ICO icon artifacts and the actual production manifest are verified.
+Controls use a 44px minimum target, but a full touch-target/accessibility audit remains necessary. Offline API writes are deliberately disabled. API responses use no-store and the worker uses NetworkOnly.
+
+Real Web Push provider delivery, expired-subscription handling on a live provider and notification permissions on real
+devices remain unverified. Self-hosted delivery needs server-side VAPID keys and outbound HTTPS. Preview reminders
+require the page to remain open; the UI explains this and offers calendar export. Calendar alarms depend on the user's
+calendar application and are not a delivery guarantee.
+
+## Final handoff boundary
+
+The source is a functional personal-budget application with automated verification and an independently usable hosted
+preview. Public multi-user authentication, remote SQLite hosting, real-device/PWA certification and verified container
+release images are outside this completed environment's verified result. The README gives concrete setup and release
+steps, including the remaining checks, without presenting them as already executed.

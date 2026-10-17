@@ -1,0 +1,281 @@
+/* Monthly planning and savings reuse Folio's existing surfaces and typography. */
+.planning-form {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0;
+}
+.planning-detail,
+.planning-explainer {
+  font-size: 0.74rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.planning-explainer {
+  margin: 22px 0;
+}
+.savings-goals {
+  margin-top: 46px;
+}
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.section-heading h2 {
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+  margin: 10px 0;
+}
+.section-heading p {
+  font-size: 0.8rem;
+  max-width: 620px;
+  line-height: 1.7;
+}
+.goal-card {
+  padding: 24px;
+  min-width: 0;
+}
+.goal-card .panel-heading {
+  padding: 0;
+  align-items: start;
+  margin-bottom: 24px;
+}
+.goal-card .eyebrow {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.goal-card h2,
+.goal-card h3 {
+  overflow-wrap: anywhere;
+}
+.goal-card p {
+  font-size: 0.76rem;
+  line-height: 1.8;
+}
+.goal-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+.goal-progress strong {
+  font-size: 1.9rem;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+}
+.goal-progress > span {
+  font-size: 0.77rem;
+  color: var(--muted);
+}
+.goal-contribute,
+.goal-history {
+  border-top: 1px solid var(--border);
+  padding: 17px 0;
+  font-size: 0.78rem;
+}
+.goal-contribute summary,
+.goal-history summary {
+  cursor: pointer;
+  min-height: 30px;
+  padding-top: 6px;
+}
+.goal-history > div,
+.custom-category-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.goal-history strong {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.goal-history small,
+.custom-category-list small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.68rem;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.goal-history > div > span,
+.custom-category-list > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.custom-category-list {
+  font-size: 0.8rem;
+  max-height: 360px;
+  overflow: auto;
+}
+.add-budget-form .inline-check {
+  grid-column: 1 / -1;
+}
+@media (max-width: 599px) {
+  .editor-footer {
+    flex-wrap: wrap;
+  }
+  .editor-footer .duplicate-button {
+    font-size: 0.7rem;
+    padding: 9px;
+  }
+}
+
+.budget-copy-panel {
+  padding: 24px;
+  margin-top: 22px;
+}
+.budget-copy-panel > p {
+  font-size: 0.78rem;
+  line-height: 1.8;
+  max-width: 780px;
+}
+.budget-copy-controls {
+  display: grid;
+  gap: 18px;
+  align-items: end;
+  margin-top: 24px;
+}
+.budget-copy-review .settings-actions {
+  padding-top: 22px;
+}
+.ledger-scope-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ledger-scope-filters select {
+  min-width: 150px;
+  max-width: 240px;
+}
+@media (min-width: 768px) {
+  .budget-copy-controls {
+    grid-template-columns: 1fr 1.5fr auto;
+  }
+}
+@media (max-width: 599px) {
+  .ledger-scope-filters {
+    width: 100%;
+  }
+  .ledger-scope-filters select {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.receipt-attachments,
+.backup-restore {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.receipt-attachments h3,
+.backup-review h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.receipt-attachments p,
+.backup-restore p,
+.workspace-backup > p {
+  font-size: 0.74rem;
+  line-height: 1.8;
+}
+.receipt-list {
+  padding: 0;
+  list-style: none;
+}
+.receipt-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.77rem;
+}
+.receipt-list li > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.receipt-list small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.receipt-upload {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.transaction-support > label {
+  margin-top: 20px;
+}
+.workspace-backup {
+  margin: 20px 0;
+}
+.backup-review {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.backup-review dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  font-size: 0.78rem;
+}
+.backup-review dd {
+  margin: 0;
+}
+
+.schedule-controls {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 16px;
+  font-size: 0.76rem;
+}
+.schedule-controls summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-top: 10px;
+}
+.schedule-controls p,
+.schedule-controls small {
+  line-height: 1.8;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.schedule-status {
+  color: var(--green);
+  font-size: 0.74rem;
+}
+.skipped-dates {
+  max-height: 220px;
+  overflow: auto;
+}
+.skipped-dates > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.recurring-card-bottom {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.planned-item .occurrence-actions {
+  flex-wrap: wrap;
+}

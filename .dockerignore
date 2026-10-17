@@ -1,0 +1,17 @@
+**/.git
+node_modules
+**/dist
+coverage
+.env*
+!.env.example
+**/*.sqlite*
+**/*.db*
+**/*.backup
+data
+.test-data
+artifacts
+*.log
+.DS_Store
+.vscode
+.openai
+.sites-runtime
