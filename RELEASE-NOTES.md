@@ -1,3 +1,60 @@
+# Folio 1.14
+
+- **Icon controls:** Edit, Mark paid and Skip use compact icon buttons with accessible names, titles and keyboard
+  behavior. Paid/skip actions retain their pause and saving guards across the recurring table/cards and calendar.
+- **Counted schedules:** Add/Edit recurring supports Never, On a date or a custom number of repetitions. Counted spans
+  start at the displayed due date, include it and retain the original month-end/leap-year anchor. One-time rules allow
+  one date. The preview and inclusive final date update before saving.
+- **Atomic persistence:** rule and ending save together. Counts preserve pause state/history and do not clear skips
+  unless date/frequency changes. Existing finite endings reopen with a count; JSON exports preserve their boundary.
+- **Deployment:** 1.14.0 images, exact supplied Dockerfile and ports 8081/5001. Schema/dependencies unchanged.
+  Delete-all and overwrite imports from 1.13 remain included.
+
+352 tests in forty-one files pass. See VALIDATION for executed checks and verification limits.
+
+# Folio 1.13
+
+- **Delete all app data:** Settings now offers a count review, explicit acknowledgment and exact typed `DELETE`.
+  Cancelling does nothing; stale reviews reject. SQLite deletes financial data, device registrations and reminder
+  settings/history atomically. Browser cleanup leaves a blank workspace and preserves unrelated site storage.
+- **Overwrite Actual imports:** choose Add (default) or Overwrite. The full replacement review accepts conflicting
+  imported identities and requires acknowledgment plus exact typed `REPLACE`. Omitted scope and unsupported schedules
+  are removed; all imported schedules stay paused. Folio JSON replacement now also requires typed `REPLACE`.
+- **Consistency:** changing source/scope invalidates replacement reviews; source controls lock during writes.
+  Late provider replies cannot recreate reminder history after the registered device has been deleted.
+- **Deployment:** 1.13.0 images, supplied Dockerfile and ports 8081/5001. No schema/dependency change.
+
+331 tests in thirty-nine files pass. See VALIDATION for executed checks and verification boundaries.
+
+# Folio 1.12
+
+- **Actual due dates:** read source next-date revisions, retain the original recurrence anchor and counted ending,
+  and preserve advanced dates as reviewed reversible skips. Recorded payments are never duplicated or rewritten.
+  Unchanged older imports can add missing progress without replacing schedules or pause controls.
+- **Recurring editor:** editable Due date initialized from the first unconfirmed instance and a live preview of six
+  pending dates. Date/frequency changes recalculate the preview; paid/skipped dates and ending limits are respected.
+  Unchanged dates preserve anchors; changed recurrence patterns clear prior skips. History remains unchanged.
+- **Review and completion:** advanced dates appear before acknowledgment and completion links back to Recurring.
+  Actual importer label and registry image tag are 1.12.0. Update frontend and backend together.
+- **Deployment:** supplied Dockerfile, ports 8081/5001, schema and dependencies remain unchanged.
+
+313 tests in thirty-seven files pass. See VALIDATION for checks and remaining device/container limits.
+
+# Folio 1.11
+
+- **Calendar instances:** all recurring dates remain visible, orange when unconfirmed, red when overdue and green when
+  recorded. Confirmation renders one actual posting. Text labels, a legend, all mobile dots and full-day agendas help
+  distinguish states. Open pages refresh their local current date.
+- **Paused planning:** paused instances remain visible with confirmation disabled; skips and inclusive endings remain
+  respected. Reminder, forecast and posting policies are unchanged.
+- **Recurring table:** default sortable table, closest unconfirmed civil date first, overdue dates first on equal
+  distance and an overdue count per rule. Name/amount sorting and optional cards retain all management controls.
+  Expense labels are red and income labels green.
+- **Deployment:** image tag 1.11.0, exact supplied Dockerfile and ports 8081/5001. No schema/dependency change.
+  The unchanged Actual decoder retains its independent 1.10.2 label.
+
+300 tests in thirty-six files pass. See VALIDATION for executed checks and verification limits.
+
 # Folio 1.10.2
 
 - **Source review:** supported/total schedules, selected scope, final payment dates and exact historical matches remain

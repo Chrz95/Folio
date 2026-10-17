@@ -268,6 +268,7 @@ export function convertActual(source: ActualSource, metadata: string): ActualFil
       'Split children become separate postings; split grouping is not retained. Starting balances become openings.',
       'Closed and off-budget accounts become ordinary manual accounts. Bank connections and groups are not imported.',
       'Reconciled entries become cleared entries; source reconciliation statements are not recreated.',
+      'Actual next-date progress is retained as reversible skips, not new payments; anchors and endings stay intact.',
       'Supported schedules import paused; simple category/notes actions carry over, otherwise category is Other.',
       'Approximate amounts become fixed estimates; ranges use a rounded midpoint. Review notes before resuming.',
       'Date matching tolerance and source auto-posting are not enabled. Unsupported schedules are listed below.',

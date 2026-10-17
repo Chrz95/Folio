@@ -4,6 +4,120 @@ A calm, manual budget manager for everyday finances. Track income, expenses and 
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
 
+## Version 1.14: icon actions and custom repetition counts
+
+Edit, Mark paid and Skip this occurrence now use pencil, check and skip icons. Accessible names, hover titles,
+keyboard operation, saving/paused disable rules and the existing payment/skip behavior remain available. Recurring
+Table and Cards use the same actions; Calendar and other occurrence lists share the icon controls. Touch devices
+retain 44-pixel targets.
+
+In **Add/Edit recurring transaction**, choose **Ends → After a number of repetitions** and enter a whole count.
+The count starts with the **Due date** shown, including that date. The original recurrence anchor remains intact when
+the due date/frequency is unchanged, so a January 31 rule whose next due date is February 28 still returns to March 31.
+Paid or skipped dates inside the counted span count toward its length; they are not added again to extend the ending.
+The live Scheduled dates preview updates immediately and displays the inclusive final payment date.
+
+New schedules can have up to 5,000 repetitions; an older rule's start position plus count must fit within the existing
+5,000-date expansion limit. A one-time rule permits only one occurrence. **Never** clears an ending, and **On a date**
+sets an explicit inclusive end. When reopening a finite rule, a matching ending is shown as the remaining scheduled
+date count from the displayed due date; an off-pattern ending stays in On a date mode. Recorded history is unchanged.
+
+Schedule fields and their ending save together in a single SQLite transaction or browser storage write. Failures
+preserve both, including existing skips and pause controls. Imported schedules remain paused when their count changes.
+Counts are stored as the inclusive schedule ending, so existing JSON exports/imports, calendars, forecasts and reminders
+retain the finite boundary without a schema migration or new dependency. Updating date/frequency retains the existing
+policy of clearing prior skips; changing only the count leaves skips intact.
+
+Recurring POST/PUT payloads now optionally accept `repetitions` and `countFrom` (default: the schedule anchor), or an
+`endDate` string/null. These ending choices are mutually exclusive. The server validates membership, integer limits,
+calendar range and inclusive endings; omission of all ending fields preserves existing API behavior. Returned/stored
+recurring rows do not include these temporary mutation fields; `/schedules` remains the persisted control boundary.
+
+Rebuild/push frontend, backend and migrate images as **1.14.0**, then pull/up with the existing Compose project/volume.
+The supplied Dockerfile and host ports 8081/5001 are unchanged. The delete-all and overwrite-import features remain
+included from 1.13. Browser visuals and Docker/ARM64 execution remain unverified here.
+
+## Version 1.13: confirmed deletion and overwrite imports
+
+Open **Settings → Your data belongs to you → Delete all app data**. Opening the dialog only prepares a count review.
+Check the irreversible-deletion acknowledgment and enter **DELETE** exactly, then choose **Delete all data permanently**.
+Lowercase or padded words are rejected. Cancel makes no changes. A changed workspace or notification state requires a
+new review and confirmation. Export a recovery copy first if you want to retain your financial data.
+
+Deletion removes every account, transaction, recurring rule, budget, goal, receipt, reconciliation and import link,
+plus notification subscriptions, reminder preferences, snoozes, attempts and delivery/test history. It leaves a blank
+workspace, with no sample accounts restored. This browser's Folio appearance, notification state and install-prompt
+preferences are cleared, while unrelated browser storage is untouched. Browser-level notification permission and
+installation remain controlled by the browser. Server configuration/VAPID environment files and database migrations
+are retained. Other devices' local browser preferences are not remotely cleared.
+
+The server validates exact typed consent and acknowledgment, checks a revision including financial and notification
+state, then deletes all user rows in one SQLite transaction. Any failure rolls back. Preview deletion validates the
+same consent, rejects changed browser data and writes one blank financial snapshot before preference cleanup. A blocked
+primary write keeps the previous data; optional cleanup/reload failures are reported separately from durable deletion.
+
+**Actual Budget import → Import behavior** defaults to **Add to current data**. Choose **Overwrite current financial
+workspace** to replace existing data, including edited/conflicting imported records. Check the selected scope and
+compatibility exclusions, confirm EUR, then choose **Review overwrite**. The review shows every financial collection's
+before/after count. Check the replacement acknowledgment, type **REPLACE** exactly and choose **Replace workspace**.
+Anything absent from the selected Actual scope is removed, including old goals, receipts and reconciliation history;
+unsupported schedules are not recreated. All imported schedules remain paused. Changing source, scope, mode or workspace
+invalidates the applicable review/consent. Source controls lock while a replacement is being prepared or committed.
+
+**Settings → Import workspace data** accepts Folio JSON exports and overwrites the financial workspace through the same
+review and typed **REPLACE** confirmation. Both overwrite paths retain device registrations, notification preferences,
+delivery history and appearance; server financial snoozes are cleared. Existing full-file/relationship validation,
+revision checks, SQLite rollback and browser quota handling remain enforced. An invalid source never clears the target.
+
+Rebuild/push the frontend, backend and migrate targets as **1.13.0**, then pull/up using the same Compose project and
+SQLite volume. The supplied Dockerfile, ports 8081/5001, schema and dependencies are unchanged. No migration is needed.
+
+## Version 1.12: Actual next due dates and editable schedule preview
+
+Actual stores its original recurrence anchor separately from `schedules_next_date`. The importer now reads the current
+next date, using local progress only when its revision matches the base revision. Earlier dates become reversible
+skips unless a matching recorded payment already covers them. The original anchor and inclusive installment ending
+remain intact; no date advancement creates a new payment or rewrites history. Completed finite schedules remain ended.
+Missing progress tables retain the rule-based behavior. Invalid/off-pattern progress is an explicit schedule exclusion.
+
+To repair an earlier import, open **Transactions → Import Actual Budget**, select the same ZIP, enable schedules and
+review with **Actual importer 1.12.0**. The review lists advanced dates it will keep skipped, even when no new schedule is
+needed. Download the review, acknowledge it and add the reviewed data. An unchanged repeat import adds no rows. Edited
+imported identities still conflict; existing pause controls and recorded history remain untouched. You may restore an
+imported skip in Recurring → Schedule controls. Re-importing that progress can add it again after another review.
+
+**Recurring → Edit** now shows an enabled **Due date**, initialized to the earliest unconfirmed occurrence, and a live
+**Scheduled dates** list of the next six unconfirmed dates, including overdue dates. Date/frequency changes update the
+preview immediately. Paid and skipped dates are omitted; pause and inclusive ending controls remain visible. Saving an
+unchanged due date preserves the original anchor. Changing the due date or frequency starts the new recurrence pattern
+there and clears prior skips, matching the existing schedule-update policy. Recorded payments, pause and ending controls
+remain unchanged. A due date after the ending is rejected; adjust the ending under Schedule controls first.
+
+Both application images must be rebuilt for **1.12.0** because the normalized import contract now includes skipped dates.
+Registry Compose defaults to 1.12.0, keeps ports 8081/5001 and uses the same SQLite volume. The supplied Dockerfile,
+dependencies and persistent schema are unchanged; no database migration is needed.
+
+## Version 1.11: calendar confirmation colors and recurring table
+
+Calendar shows every recurring instance in the displayed month grid: **orange** for unconfirmed dates today or later,
+**red** for overdue unconfirmed dates and **green** for recorded transactions. Confirming an occurrence shows its actual
+posting once, preserving its recorded amount. Confirmed means recorded, independently of bank clearance. Desktop cells
+show every event; phones show every status dot, with names and controls in the selected-day agenda. Status labels and
+a legend accompany the colors. Open pages refresh their date when returning to the foreground and every minute.
+
+Paused schedules remain visible for planning, with confirmation disabled until resumed. Skipped dates stay hidden and
+inclusive ending dates remain respected. This display does not enable reminders, auto-post payments or change balances.
+
+Recurring opens in **Table** view by default, one row per rule. Its default sort uses the unconfirmed occurrence closest
+to today's local date, including past dates; equally close overdue dates come first. An overdue count remains visible
+when the closest instance is in the future. Rules without unconfirmed dates sort last. Click Name, Amount or Closest
+unconfirmed to change direction/order, or choose Cards. Expense labels are red and income labels green in both views.
+Edit, confirmation, skip, pause/resume and ending controls remain available.
+
+Rebuild/push **1.11.0** images and pull/up using the same Compose project and SQLite volume. Registry Compose defaults
+to 1.11.0 with ports 8081/5001. The supplied Dockerfile, schema and dependencies are unchanged. The Actual decoder has
+not changed; its separate **Actual importer 1.10.2** label remains correct.
+
 ## Version 1.10.2: source-aware import review
 
 The import page now separates source compatibility from selected scope: supported/total schedules, selected schedules,
@@ -134,8 +248,8 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.10.2 \
-    -t "192.168.1.11:5000/folio-${target}:1.10.2" \
+    --build-arg VERSION=1.14.0 \
+    -t "192.168.1.11:5000/folio-${target}:1.14.0" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```
@@ -146,7 +260,7 @@ On the Pi, if keys have not already been configured, generate a new private file
 ```bash
 docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
   --volume "$PWD:/keys" \
-  192.168.1.11:5000/folio-backend:1.10.2 \
+  192.168.1.11:5000/folio-backend:1.14.0 \
   backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
 ```
 
@@ -490,7 +604,8 @@ the tsx import hook. Using the import hook avoids the tsx CLI's IPC socket requi
 - **Transfers:** debit the source and credit the destination by the same integer amount. Transfers never count as
   income or spending. Equal source/destination accounts are rejected by validation and database constraints.
 - **Calendar:** actual entries and planned occurrences share one month view. Select a date to see its agenda, add an
-  entry, or mark a planned payment paid. Dashed events are planned. Planned payments do not change balances.
+  entry, or mark a planned payment paid. Unconfirmed dates are orange, overdue dates red and recorded postings green.
+  Planned payments do not change balances.
 - **Schedules:** one-time, weekly, monthly and yearly rules. A newly entered future one-time payment becomes a planned
   rule with a two-day reminder; edit its schedule to change the lead time. Existing recorded entries cannot be moved
   into the future through the editor; create a planned payment instead. The recurring list also contains one-time plans.
@@ -614,6 +729,8 @@ signed integers. Goal progress is bounded to 0–100,000,000,000 cents, independ
 | `POST /imports/actual/commit`                        | Same normalized file and consent plus reviewed SHA-256 `revision`; atomic additions               |
 | `POST /workspace/import/preview`                     | Validate a complete JSON financial workspace; review replacement counts without writes            |
 | `POST /workspace/import/commit`                      | `{ data, revision, confirmation: "REPLACE" }`; atomic financial replacement with paused schedules |
+| `POST /workspace/delete/preview`                     | Read-only counts and revision for all financial/notification data                                 |
+| `POST /workspace/delete/commit`                      | `{ revision, confirmation: "DELETE", acknowledged: true }`; atomic complete user-data deletion    |
 | `GET /workspace/export`                              | Read one consistent financial snapshot including receipt bytes                                    |
 | `GET /schedules`                                     | Read pause/end-date settings and skipped occurrences                                              |
 | `PUT /schedules/settings`                            | Save `{ recurringId, isPaused, endDate }`                                                         |

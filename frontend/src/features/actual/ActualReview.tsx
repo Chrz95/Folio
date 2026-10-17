@@ -1,6 +1,7 @@
 import type { ActualWizard } from './useActualImport';
 import { ACTUAL } from './actual.constants';
 import { ActualBalances } from './ActualBalances';
+import { ActualProgressReview } from './ActualProgressReview';
 import { ActualScheduleReview } from './ActualScheduleReview';
 /** Download every approved addition and compatibility exclusion for inspection.
  * @param {ActualWizard} wizard - Reviewed workflow. @returns {void} Browser download. */
@@ -49,6 +50,10 @@ export function ActualReview({ wizard }: { wizard: ActualWizard }) {
           file={wizard.file}
         />
       )}
+      <ActualProgressReview
+        review={review}
+        file={wizard.file}
+      />
       <ActualBalances review={review} />
       <button
         className="button secondary"

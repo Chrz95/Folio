@@ -1,5 +1,7 @@
 import { categoryNames } from '../planning/catalog';
 import { useEntrySuggestions } from './useEntrySuggestions';
+import { useScheduleEnding } from './useScheduleEnding';
+import { editorOccurrences } from './editorOccurrences';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { EditorState, TransactionType, Frequency } from '../../types/budget';
@@ -18,6 +20,17 @@ export function useTransactionForm(editor: EditorState) {
   const [frequency, setFrequency] = useState<Frequency>(
     original && 'frequency' in original ? original.frequency : 'monthly',
   );
+  const [initialDueDate] = useState(() =>
+    original && 'frequency' in original
+      ? (editorOccurrences(data, original)[0]?.date ?? original.date)
+      : (original?.date ?? editor.date ?? dateKey()),
+  );
+  const [date, setDate] = useState(initialDueDate);
+  const scheduleDate =
+    original && 'frequency' in original && frequency === original.frequency && isRecurring && date === initialDueDate
+      ? original.date
+      : date;
+  const ending = useScheduleEnding(data, original?.id, scheduleDate, date, frequency);
   const [error, setError] = useState('');
   const entry = useEntrySuggestions(data, defaults, type);
   /** Change kind without overriding an explicit category. @param {TransactionType} next - Kind.
@@ -25,6 +38,14 @@ export function useTransactionForm(editor: EditorState) {
   function changeType(next: TransactionType) {
     setType(next);
     entry.changeType(next);
+  }
+  /** Keep one-time repetition counts representable when frequency changes.
+   * @param {Frequency} next - New recurrence. @returns {void} Updated draft. */
+  function changeFrequency(next: Frequency) {
+    setFrequency(next);
+    if (next === 'once') {
+      ending.setCount('1');
+    }
   }
   /** Validate the completed form and await a durable save before closing.
    * @param {FormEvent<HTMLFormElement>} event - Native form submission.
@@ -50,6 +71,10 @@ export function useTransactionForm(editor: EditorState) {
       return;
     }
     const shouldSchedule = isRecurring || isPlannedOneTime;
+    if (isRecurring && ending.error) {
+      setError(ending.error);
+      return;
+    }
     const value = {
       name: String(fields.get('name')).trim(),
       amount,
@@ -57,8 +82,9 @@ export function useTransactionForm(editor: EditorState) {
       category: type === 'transfer' ? 'Savings' : String(fields.get('category')),
       accountId,
       destinationAccountId,
-      date: String(fields.get('date')),
+      date: shouldSchedule ? scheduleDate : String(fields.get('date')),
       notes: String(fields.get('notes')).trim(),
+      ...(isRecurring ? ending.request : {}),
       ...(shouldSchedule
         ? {
             frequency: isPlannedOneTime ? 'once' : frequency,
@@ -103,12 +129,15 @@ export function useTransactionForm(editor: EditorState) {
     isRecurring,
     setRecurring,
     frequency,
-    setFrequency,
+    setFrequency: changeFrequency,
+    ending,
     error,
     handleSubmit,
     handleDelete,
     original,
-    date: original?.date ?? editor.date ?? dateKey(),
+    date,
+    setDate,
+    scheduleDate,
     accounts: data.accounts,
   };
 }

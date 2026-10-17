@@ -30,6 +30,9 @@ export function occurrenceDate(startDate: string, frequency: Frequency, index: n
  * @returns {Occurrence[]} Ordered planned occurrences. */
 export function getOccurrences(data: BudgetData, from: string, to: string): Occurrence[] {
   const occurrences: Occurrence[] = [];
+  const posted = new Set(
+    data.transactions.filter((row) => row.recurringId).map((row) => `${row.recurringId}:${row.date}`),
+  );
   for (const template of data.recurring) {
     for (let index = 0; index < VALUE.maximumOccurrences; index += 1) {
       if (template.frequency === 'once' && index > 0) {
@@ -40,7 +43,7 @@ export function getOccurrences(data: BudgetData, from: string, to: string): Occu
         break;
       }
       if (date >= from) {
-        const isPaid = data.transactions.some((entry) => entry.recurringId === template.id && entry.date === date);
+        const isPaid = posted.has(`${template.id}:${date}`);
         if (!isPaid && !isScheduleDateEnabled(template.id, date, data)) {
           continue;
         }
@@ -60,13 +63,13 @@ export function getOccurrences(data: BudgetData, from: string, to: string): Occu
  * @param {string} start - Original date.
  * @param {string} frequency - Recurrence rule.
  * @param {string} candidate - Requested posting date.
- * @returns {boolean} Whether this date belongs to the series. */
-export function isOccurrence(start: string, frequency: Frequency, candidate: string) {
+ * @returns {number | null} Zero-based position, or null outside the series. */
+export function occurrenceIndex(start: string, frequency: Frequency, candidate: string) {
   if (frequency === 'once') {
-    return candidate === start;
+    return candidate === start ? 0 : null;
   }
   if (candidate < start) {
-    return false;
+    return null;
   }
   const origin = new Date(`${start}T12:00:00Z`);
   const target = new Date(`${candidate}T12:00:00Z`);
@@ -78,7 +81,14 @@ export function isOccurrence(start: string, frequency: Frequency, candidate: str
     const millisecondsPerWeek = 604800000;
     index = (target.getTime() - origin.getTime()) / millisecondsPerWeek;
   }
-  return Number.isInteger(index) && occurrenceDate(start, frequency, index) === candidate;
+  return Number.isInteger(index) && occurrenceDate(start, frequency, index) === candidate ? index : null;
+}
+
+/** Check exact membership without losing month-end anchors.
+ * @param {string} start - Original date. @param {Frequency} frequency - Recurrence.
+ * @param {string} candidate - Candidate date. @returns {boolean} Exact occurrence membership. */
+export function isOccurrence(start: string, frequency: Frequency, candidate: string) {
+  return occurrenceIndex(start, frequency, candidate) !== null;
 }
 
 const MONTHS_PER_YEAR = 12;

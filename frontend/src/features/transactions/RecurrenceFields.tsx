@@ -1,3 +1,4 @@
+import { ScheduleEndingFields } from './ScheduleEndingFields';
 import { VALUE } from '../../constants/app.constants';
 import { Repeat2 } from 'lucide-react';
 import type { Frequency } from '../../types/budget';
@@ -57,6 +58,7 @@ export function RecurrenceFields({ form }: RecurrenceFieldsProps) {
           </label>
         </div>
       )}
+      <ScheduleEndingFields form={form} />
       {isRecurring && (
         <p className="field-hint">Scheduled payments appear in your calendar. Mark each one paid when it happens.</p>
       )}

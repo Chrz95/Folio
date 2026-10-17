@@ -2,7 +2,7 @@ import type { DatabaseClient } from '../../db/client.js';
 import { accounts, transactions, recurring } from '../../db/schema/budget.js';
 import { monthlyBudgets, customCategories } from '../../db/schema/planning.js';
 import { clearances } from '../../db/schema/operations.js';
-import { scheduleSettings } from '../../db/schema/schedules.js';
+import { scheduleSettings, skippedOccurrences } from '../../db/schema/schedules.js';
 import type { ActualData } from './actualSchema.js';
 /** Own the destination queries; imported SQL never reaches the application database.
  * @param {DatabaseClient} client - Existing migrated SQLite connection. @returns {object} Additive repository. */
@@ -22,6 +22,7 @@ export function createActualRepository(client: DatabaseClient) {
         .all(),
       clearances: database.select().from(clearances).all(),
       scheduleSettings: database.select().from(scheduleSettings).all(),
+      skippedOccurrences: database.select().from(skippedOccurrences).all(),
     }),
     /** Insert in foreign-key order; the caller's transaction covers every row.
      * @param {ActualData} rows - Reviewed additions. @returns {void} Durable rows. */
@@ -37,6 +38,7 @@ export function createActualRepository(client: DatabaseClient) {
       rows.scheduleSettings.forEach((row) => database.insert(scheduleSettings).values(row).run());
       rows.transactions.forEach((row) => database.insert(transactions).values(row).run());
       rows.monthlyBudgets.forEach((row) => database.insert(monthlyBudgets).values(row).run());
+      rows.skippedOccurrences.forEach((row) => database.insert(skippedOccurrences).values(row).run());
       rows.clearances.forEach((row) => database.insert(clearances).values(row).run());
     },
     /** Keep revision checks and writes indivisible. @param {() => T} action - Synchronous operation.

@@ -12,7 +12,7 @@ import { actualPlan, mergeActual } from './actualMerge';
 import { convertActual } from './convertActual';
 import { readActualFile } from './actualFile';
 import ActualImportPage from '../../pages/ActualImportPage';
-const workspace = vi.hoisted(() => ({ data: {} as BudgetData, reload: vi.fn() }));
+const workspace = vi.hoisted(() => ({ data: {} as BudgetData, reload: vi.fn(), setNotice: vi.fn() }));
 vi.mock('../../app/config/environment', () => ({ environment: { isDemo: true, apiBaseUrl: '/api/v1' } }));
 vi.mock('../../app/WorkspaceContext', () => ({ useWorkspace: () => workspace }));
 vi.mock('./actualFile', () => ({ readActualFile: vi.fn() }));
@@ -57,6 +57,105 @@ function acknowledge() {
   fireEvent.click(screen.getByLabelText(/I reviewed the additions/));
 }
 describe('native import preview workflow with actual storage and merge logic', () => {
+  it('overwrites conflicting imported records only after a full review and typed confirmation', async () => {
+    const initial = structuredClone(mergeActual(workspace.data, actualPlan(workspace.data, file).rows));
+    initial.recurring.find((row) => row.id === file.recurring[0]!.id)!.name = 'Changed in Folio';
+    workspace.data = initial;
+    writeDemo(initial);
+    const before = localStorage.getItem('folio-demo-v1');
+    await choose();
+    fireEvent.click(screen.getByLabelText(/I confirm this budget uses EUR/));
+    fireEvent.click(screen.getByRole('button', { name: 'Review import' }));
+    await screen.findByText(/An imported identity was edited/);
+    expect(localStorage.getItem('folio-demo-v1')).toBe(before);
+    fireEvent.change(screen.getByLabelText('Import behavior'), { target: { value: 'replace' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Review overwrite' }));
+    const replace = await screen.findByRole('button', { name: 'Replace workspace' });
+    expect(replace).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('I understand this replaces the current financial workspace.'));
+    expect(replace).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Type REPLACE to overwrite existing data'), {
+      target: { value: 'replace' },
+    });
+    expect(replace).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Type REPLACE to overwrite existing data'), {
+      target: { value: 'REPLACE' },
+    });
+    fireEvent.click(replace);
+    await screen.findByText(/Financial workspace overwritten/);
+    expect(readDemo().accounts).toEqual(file.accounts);
+    expect(readDemo().transactions).toEqual(file.transactions);
+    expect(readDemo().recurring).toEqual(file.recurring);
+    expect(readDemo().scheduleSettings?.every((row) => row.isPaused)).toBe(true);
+    vi.mocked(readActualFile).mockResolvedValueOnce(
+      convertActual(actualFixture(), JSON.stringify({ id: 'second-overwrite', budgetName: 'Second fixture' })),
+    );
+    fireEvent.change(screen.getByLabelText(/Actual Budget export/), {
+      target: { files: [new File(['second'], 'second.zip', { type: 'application/zip' })] },
+    });
+    await screen.findByText('Second fixture');
+    expect(screen.getByRole('button', { name: 'Review overwrite' })).toBeDisabled();
+    expect(screen.queryByText(/Financial workspace overwritten/)).not.toBeInTheDocument();
+  });
+  it('invalidates an overwrite review when scope changes and replaces only the selected source scope', async () => {
+    const before = localStorage.getItem('folio-demo-v1');
+    await choose();
+    fireEvent.change(screen.getByLabelText('Import behavior'), { target: { value: 'replace' } });
+    expect(screen.getByRole('button', { name: 'Review overwrite' })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/I confirm this budget uses EUR/));
+    fireEvent.click(screen.getByRole('button', { name: 'Review overwrite' }));
+    await screen.findByRole('button', { name: 'Replace workspace' });
+    fireEvent.click(screen.getByLabelText('I understand this replaces the current financial workspace.'));
+    fireEvent.change(screen.getByLabelText('Type REPLACE to overwrite existing data'), {
+      target: { value: 'REPLACE' },
+    });
+    fireEvent.click(screen.getByLabelText('Include supported schedules (paused)'));
+    expect(screen.queryByRole('button', { name: 'Replace workspace' })).not.toBeInTheDocument();
+    expect(localStorage.getItem('folio-demo-v1')).toBe(before);
+    fireEvent.click(screen.getByRole('button', { name: 'Review overwrite' }));
+    const replace = await screen.findByRole('button', { name: 'Replace workspace' });
+    expect(replace).toBeDisabled();
+    expect(screen.getByLabelText('Type REPLACE to overwrite existing data')).toHaveValue('');
+    fireEvent.click(screen.getByLabelText('I understand this replaces the current financial workspace.'));
+    fireEvent.change(screen.getByLabelText('Type REPLACE to overwrite existing data'), {
+      target: { value: 'REPLACE' },
+    });
+    fireEvent.click(replace);
+    await screen.findByText(/Financial workspace overwritten/);
+    expect(readDemo().recurring).toEqual([]);
+    expect(readDemo().transactions.every((row) => row.recurringId === null)).toBe(true);
+  });
+  it('reviews a next-date repair on an old import and persists it only after acknowledgment', async () => {
+    const legacy = actualPlan(workspace.data, file);
+    workspace.data = mergeActual(workspace.data, legacy.rows);
+    writeDemo(workspace.data);
+    const before = readDemo();
+    const source = actualFixture();
+    source.schedules_next_date = [
+      {
+        id: 'next',
+        schedule_id: 'rent',
+        base_next_date: 20261003,
+        local_next_date: 20261203,
+        base_next_date_ts: 10,
+        local_next_date_ts: 10,
+      },
+    ];
+    vi.mocked(readActualFile).mockResolvedValueOnce(
+      convertActual(source, JSON.stringify({ id: 'workflow-fixture', budgetName: 'Workflow fixture' })),
+    );
+    await choose();
+    await review();
+    expect(screen.getByText('1 advanced Actual dates to keep skipped')).toBeInTheDocument();
+    expect(readDemo()).toEqual(before);
+    expect(screen.getByRole('button', { name: 'Add reviewed data' })).toBeDisabled();
+    acknowledge();
+    fireEvent.click(screen.getByRole('button', { name: 'Add reviewed data' }));
+    await screen.findByText('Your budget has arrived');
+    expect(screen.getByText(/1 advanced planned dates kept skipped/)).toBeInTheDocument();
+    expect(readDemo().transactions).toEqual(before.transactions);
+    expect(readDemo().skippedOccurrences).toContainEqual({ recurringId: file.recurring[0]!.id, date: '2026-11-03' });
+  });
   it('requires both consents and preserves existing financial records and metadata', async () => {
     const before = readDemo();
     await choose();
@@ -227,7 +326,7 @@ describe('native import preview workflow with actual storage and merge logic', (
       convertActual(source, JSON.stringify({ id: 'workflow-fixture', budgetName: 'Workflow fixture' })),
     );
     await choose();
-    expect(screen.getByText('Actual importer 1.10.2')).toBeInTheDocument();
+    expect(screen.getByText('Actual importer 1.13.0')).toBeInTheDocument();
     expect(screen.getByText(/Schedule date.interval/)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('0 of 1 schedules supported');
     expect(screen.queryByText('No schedules require manual recreation.')).not.toBeInTheDocument();
@@ -245,7 +344,7 @@ describe('native import preview workflow with actual storage and merge logic', (
     const report = JSON.parse(await loaded);
     expect(click).toHaveBeenCalledOnce();
     expect(report.format).toBe('folio-actual-schedule-diagnostics');
-    expect(report.importerVersion).toBe('1.10.2');
+    expect(report.importerVersion).toBe('1.13.0');
     expect(report.schedules[0].source.conditions[2].value.interval).toBe(2);
     expect(report.transactions).toBeUndefined();
     expect(Object.keys(report.schedules[0].source)).not.toContain('transactions');

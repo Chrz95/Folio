@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useActualImport } from '../features/actual/useActualImport';
 import { ActualUpload } from '../features/actual/ActualUpload';
 import { ActualCompatibility } from '../features/actual/ActualCompatibility';
+import { ActualOverwrite } from '../features/actual/ActualOverwrite';
 import { ActualReview } from '../features/actual/ActualReview';
 /** Import a native Actual Budget archive through an explicit additive review.
  * @returns {JSX.Element} Migration page. */
@@ -44,6 +45,12 @@ export default function ActualImportPage() {
               <Link to="/recurring">Review them in Recurring</Link>.
             </p>
           )}
+          {wizard.result.skippedOccurrences > 0 && (
+            <p>
+              {wizard.result.skippedOccurrences} advanced planned dates kept skipped.{' '}
+              <Link to="/recurring">Review due dates in Recurring</Link>.
+            </p>
+          )}
           <Link
             className="button primary"
             to="/transactions"
@@ -57,7 +64,15 @@ export default function ActualImportPage() {
             <ActualUpload wizard={wizard} />
             {wizard.file && <ActualCompatibility file={wizard.file} />}
           </div>
-          <ActualReview wizard={wizard} />
+          {wizard.mode === 'replace' ? (
+            <ActualOverwrite
+              file={wizard.file}
+              currency={wizard.currency}
+              onBusyChange={wizard.setOverwriteBusy}
+            />
+          ) : (
+            <ActualReview wizard={wizard} />
+          )}
         </div>
       )}
     </div>

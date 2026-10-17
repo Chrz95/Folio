@@ -1,27 +1,21 @@
 import { OccurrenceActions } from '../schedules/OccurrenceActions';
 import { ScheduleControls } from '../schedules/ScheduleControls';
 import { Pencil, Bell } from 'lucide-react';
-import type { RecurringTransaction } from '../../types/budget';
+import type { RecurringRow } from '../recurring/recurringRows';
 import { useWorkspace } from '../../app/WorkspaceContext';
-import { getOccurrences } from './recurrence';
-import { money, formatDate, dateKey, shiftMonth } from '../../utils/format';
+import { money, formatDate } from '../../utils/format';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
-import { FREQUENCY_LABEL, VALUE } from '../../constants/app.constants';
+import { FREQUENCY_LABEL } from '../../constants/app.constants';
 interface RecurringCardProps {
-  template: RecurringTransaction;
+  row: RecurringRow;
 }
 /** Display the next unpaid occurrence and allow explicit payment posting.
  * @param {RecurringCardProps} props - Schedule configuration.
- * @param {RecurringTransaction} props.template - Recurring rule.
+ * @param {RecurringRow} props.row - Schedule and nearest unconfirmed date.
  * @returns {JSX.Element} Recurring payment card. */
-export function RecurringCard({ template }: RecurringCardProps) {
+export function RecurringCard({ row }: RecurringCardProps) {
   const { data, setEditor } = useWorkspace();
-  const settings = data.scheduleSettings?.find((entry) => entry.recurringId === template.id);
-  const next = getOccurrences(
-    { ...data, recurring: [template] },
-    dateKey(),
-    shiftMonth(dateKey(), VALUE.monthCount),
-  ).find((entry) => !entry.isPaid);
+  const { template, closest: next, isPaused, endDate } = row;
   return (
     <article className="panel recurring-card">
       <div className="recurring-card-top">
@@ -30,6 +24,7 @@ export function RecurringCard({ template }: RecurringCardProps) {
         <button
           className="icon-button"
           aria-label={`Edit ${template.name}`}
+          title={`Edit ${template.name}`}
           onClick={() => setEditor({ transaction: template, isRecurring: true })}
         >
           <Pencil size={16} />
@@ -49,12 +44,12 @@ export function RecurringCard({ template }: RecurringCardProps) {
         </small>
       </div>
       <p className="schedule-status">
-        {settings?.isPaused ? 'Paused' : settings?.endDate ? `Ends ${formatDate(settings.endDate)}` : 'Active schedule'}
+        {isPaused ? 'Paused' : endDate ? `Ends ${formatDate(endDate)}` : 'Active schedule'}
       </p>
       <div className="recurring-date">
-        <span>Next payment</span>
+        <span>Closest unconfirmed</span>
         <strong>
-          {next ? formatDate(next.date, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No upcoming occurrence'}
+          {next ? formatDate(next.date, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No unconfirmed dates'}
         </strong>
       </div>
       <div className="recurring-card-bottom">
@@ -62,7 +57,10 @@ export function RecurringCard({ template }: RecurringCardProps) {
           <Bell size={13} />
           {template.reminderDays === 0 ? 'On the due date' : `${template.reminderDays} days before`}
         </span>
-        <OccurrenceActions occurrence={next} />
+        <OccurrenceActions
+          occurrence={next}
+          isPaused={isPaused}
+        />
       </div>
       <ScheduleControls template={template} />
     </article>

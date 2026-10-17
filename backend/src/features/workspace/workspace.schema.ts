@@ -8,3 +8,12 @@ export const workspaceImportCommit = workspaceImportInput
     confirmation: z.literal(BACKUP.confirmation),
   })
   .strict();
+
+export const workspaceDeleteInput = z.object({}).strict();
+export const workspaceDeleteCommit = z
+  .object({
+    revision: z.string().regex(/^[a-f0-9]{64}$/),
+    confirmation: z.literal(BACKUP.deleteWord),
+    acknowledged: z.literal(true),
+  })
+  .strict();

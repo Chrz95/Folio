@@ -67,6 +67,39 @@ describe('Actual recurrence editor format regression', () => {
       db.close();
     }
   });
+  it('reads progress from a native ZIP table with live/tombstoned rows and preserves next due', () => {
+    const source = actualEditorFixture();
+    source.schedules_next_date = [
+      {
+        id: 'next',
+        schedule_id: 'rent',
+        base_next_date: 20261003,
+        local_next_date: 20261203,
+        base_next_date_ts: 10,
+        local_next_date_ts: 10,
+        tombstone: 0,
+      },
+      {
+        id: 'deleted',
+        schedule_id: 'rent',
+        base_next_date: 20261003,
+        local_next_date: 20271003,
+        base_next_date_ts: 10,
+        local_next_date_ts: 10,
+        tombstone: 1,
+      },
+    ];
+    const native = readActualZip(actualZipFixture(directory, source));
+    const db = new SQL.Database(native.database);
+    try {
+      const file = readActualDatabase(db, metadata);
+      expect(file.exclusions).toEqual([]);
+      expect(file.skippedOccurrences.map((row) => row.date)).toEqual(['2026-10-03', '2026-11-03']);
+      expect(actualPlan(empty, file).rows.skippedOccurrences.map((row) => row.date)).toEqual(['2026-11-03']);
+    } finally {
+      db.close();
+    }
+  });
   it('preserves mixed legacy rule orders, six installment endings and off-date payment history', () => {
     const source = actualMigrationFixture();
     const native = readActualZip(actualZipFixture(directory, source));

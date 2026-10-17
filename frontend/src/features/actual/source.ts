@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { v5 } from 'uuid';
 import { ACTUAL, SOURCE_TABLES } from './actual.constants';
 export type SourceRow = Record<string, string | number | Uint8Array | null>;
-export type ActualSource = Record<(typeof SOURCE_TABLES)[number], SourceRow[]>;
+export type ActualSource = Record<Exclude<(typeof SOURCE_TABLES)[number], 'schedules_next_date'>, SourceRow[]> & {
+  schedules_next_date?: SourceRow[];
+};
 /** Read an unambiguous source identifier or string. @param {unknown} value - Raw field.
  * @returns {string} Original text. */
 export function text(value: unknown): string {

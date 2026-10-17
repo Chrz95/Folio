@@ -1,39 +1,23 @@
 import { WorkspaceBackup } from '../backup/WorkspaceBackup';
 import { REMINDER_STORAGE } from '../reminders/reminders.constants';
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { DeleteAllData } from '../backup/DeleteAllData';
+import { RotateCcw } from 'lucide-react';
 import { useWorkspace } from '../../app/WorkspaceContext';
 import { environment } from '../../app/config/environment';
 import { createDemoSeed } from '../transactions/demoSeed.constants';
 import { writeDemo } from '../../lib/storage/demoStore';
 import { APP } from '../../constants/app.constants';
-/** Export portable data and offer explicit preview-data cleanup.
+/** Export, overwrite and explicitly confirm complete data deletion.
  * @returns {JSX.Element} Data management panel. */
 export function DataSettings() {
-  const { data, reload, setError, setNotice } = useWorkspace();
-  /** Replace only this app's preview dataset after confirmation.
-   * @param {boolean} useSamples - Restore samples or create a blank budget.
-   * @returns {Promise<void>} Visible success/failure feedback. */
-  async function resetDemo(useSamples: boolean) {
-    if (
-      !window.confirm(
-        useSamples
-          ? 'Replace your preview data with the sample workspace?'
-          : 'Clear all preview transactions, schedules, budgets, goals and custom categories? ' +
-              'Account balances will reset to zero.',
-      )
-    ) {
+  const { reload, setError, setNotice } = useWorkspace();
+  /** Restore only sample preview data after explicit confirmation. @returns {Promise<void>} Durable reset. */
+  async function restoreSamples() {
+    if (!window.confirm('Replace your preview data with the sample workspace?')) {
       return;
     }
     try {
-      const next = useSamples
-        ? createDemoSeed()
-        : {
-            transactions: [],
-            recurring: [],
-            budgets: [],
-            accounts: data.accounts.map((account) => ({ ...account, openingBalance: 0 })),
-          };
-      writeDemo(next);
+      writeDemo(createDemoSeed());
       localStorage.removeItem(APP.notificationsKey);
       localStorage.removeItem(REMINDER_STORAGE);
       await reload();
@@ -56,21 +40,13 @@ export function DataSettings() {
         {environment.isDemo && (
           <button
             className="button secondary"
-            onClick={() => void resetDemo(true)}
+            onClick={() => void restoreSamples()}
           >
             <RotateCcw size={16} />
             Restore samples
           </button>
         )}
-        {environment.isDemo && (
-          <button
-            className="button secondary negative"
-            onClick={() => void resetDemo(false)}
-          >
-            <Trash2 size={16} />
-            Start fresh
-          </button>
-        )}
+        <DeleteAllData />
       </div>
     </section>
   );

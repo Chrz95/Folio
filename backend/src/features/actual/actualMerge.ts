@@ -8,6 +8,7 @@ export interface ActualState {
   customCategories?: ActualData['customCategories'];
   monthlyBudgets?: (Omit<ActualData['monthlyBudgets'][number], 'rollover'> & { rollover: boolean })[];
   clearances?: (Omit<ActualData['clearances'][number], 'reconciliationId'> & { reconciliationId: string | null })[];
+  skippedOccurrences?: ActualData['skippedOccurrences'];
   scheduleSettings?: (Omit<ActualData['scheduleSettings'][number], 'isPaused'> & { isPaused: boolean })[];
 }
 /** Canonicalize object keys for database/browser equality without depending on SQL column order.
@@ -163,7 +164,29 @@ export function actualPlan(target: ActualState, file: ActualFile) {
   const scheduleSettings = file.scheduleSettings.filter((row) =>
     recurring.some((entry) => entry.id === row.recurringId),
   );
-  const rows = { accounts, customCategories, transactions, recurring, monthlyBudgets, clearances, scheduleSettings };
+  unique(file.skippedOccurrences.map((row) => `${row.recurringId}:${row.date}`));
+  const skippedOccurrences = file.skippedOccurrences.filter((row) => {
+    const rule = scheduleById.get(row.recurringId);
+    const ending = file.scheduleSettings.find((setting) => setting.recurringId === row.recurringId)?.endDate;
+    if (!rule || !isActualOccurrence(rule.date, rule.frequency, row.date) || (ending && row.date > ending)) {
+      throw new Error('An imported skipped date is outside its schedule.');
+    }
+    return (
+      !target.skippedOccurrences?.some((old) => old.recurringId === row.recurringId && old.date === row.date) &&
+      !target.transactions.some((old) => old.recurringId === row.recurringId && old.date === row.date) &&
+      !transactions.some((posted) => posted.recurringId === row.recurringId && posted.date === row.date)
+    );
+  });
+  const rows = {
+    accounts,
+    customCategories,
+    transactions,
+    recurring,
+    monthlyBudgets,
+    clearances,
+    scheduleSettings,
+    skippedOccurrences,
+  };
   const merged = mergeActual(target, rows);
   unique(merged.transactions.filter((row) => row.recurringId).map((row) => `${row.recurringId}:${row.date}`));
   return {
@@ -176,6 +199,7 @@ export function actualPlan(target: ActualState, file: ActualFile) {
       monthlyBudgets: monthlyBudgets.length,
       clearances: clearances.length,
       scheduleSettings: scheduleSettings.length,
+      skippedOccurrences: skippedOccurrences.length,
     },
     reused: file.transactions.length - transactions.length,
     preservedUnlinkedPayments,
@@ -202,5 +226,6 @@ export function mergeActual<T extends ActualState>(target: T, rows: ActualData):
     monthlyBudgets: [...(target.monthlyBudgets ?? []), ...rows.monthlyBudgets],
     clearances: [...(target.clearances ?? []), ...rows.clearances],
     scheduleSettings: [...(target.scheduleSettings ?? []), ...rows.scheduleSettings],
+    skippedOccurrences: [...(target.skippedOccurrences ?? []), ...rows.skippedOccurrences],
   };
 }

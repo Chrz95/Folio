@@ -4,6 +4,7 @@ import { ACTUAL } from './actual.constants';
 import { identity, label, text } from './source';
 import { readScheduleRule } from './actualScheduleRule';
 import { readScheduleDate } from './actualScheduleDate';
+import { sourceSkippedDates } from './actualNextDate';
 import { scheduleDiagnostic } from './actualScheduleDiagnostics';
 /** Convert supported recurrence rules to paused templates; disclose approximate amounts and retain exclusions.
  * @param {ActualSource} source - Native rows. @param {string} budget - Stable identity.
@@ -23,6 +24,7 @@ export function convertSchedules(
   const recurring: ActualFile['recurring'] = [];
   const scheduleSettings: ActualFile['scheduleSettings'] = [];
   const exclusions: ActualFile['exclusions'] = [];
+  const skippedOccurrences: ActualFile['skippedOccurrences'] = [];
   const rules = new Map(source.rules.map((row) => [text(row.id), row]));
   for (const row of source.schedules) {
     const name = label(row.name || 'Actual schedule', ACTUAL.name);
@@ -54,6 +56,7 @@ export function convertSchedules(
       if (notes.length > ACTUAL.notes) {
         throw new Error('Schedule notes exceed 1,000 characters.');
       }
+      const skippedDates = sourceSkippedDates(source, row, start, frequency, endDate);
       recurring.push({
         id,
         name: row.name ? name : payeeName,
@@ -68,6 +71,7 @@ export function convertSchedules(
         reminderDays: 0,
       });
       scheduleSettings.push({ recurringId: id, isPaused: true, endDate: endDate ?? null });
+      skippedOccurrences.push(...skippedDates.map((date) => ({ recurringId: id, date })));
     } catch (error) {
       const reason =
         error instanceof Error && !('issues' in error)
@@ -81,5 +85,5 @@ export function convertSchedules(
       });
     }
   }
-  return { recurring, scheduleSettings, exclusions };
+  return { recurring, scheduleSettings, skippedOccurrences, exclusions };
 }

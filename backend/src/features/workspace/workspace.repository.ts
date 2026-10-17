@@ -1,8 +1,15 @@
 import type { DatabaseClient } from '../../db/client.js';
-import { accounts, transactions, recurring, budgets } from '../../db/schema/budget.js';
+import { accounts, transactions, recurring, budgets, subscriptions, deliveries } from '../../db/schema/budget.js';
 import { customCategories, monthlyBudgets, savingsGoals, goalContributions } from '../../db/schema/planning.js';
 import { receipts } from '../../db/schema/receipts.js';
-import { clearances, reconciliations, importLinks, reminderSnoozes } from '../../db/schema/operations.js';
+import {
+  clearances,
+  reconciliations,
+  importLinks,
+  reminderSnoozes,
+  reminderAttempts,
+  reminderPreferences,
+} from '../../db/schema/operations.js';
 import { skippedOccurrences, scheduleSettings } from '../../db/schema/schedules.js';
 import { workspaceSnapshot } from '../receipts/workspaceSnapshot.js';
 import type { RestorableWorkspace } from './backupSchema.js';
@@ -14,6 +21,24 @@ export function createWorkspaceRepository(client: DatabaseClient) {
     /** Read a consistent financial snapshot, including supporting file bytes.
      * @returns {object} Complete current financial state. */
     snapshot: () => workspaceSnapshot(client),
+    /** Include notification state in deletion revisions without exposing subscription credentials.
+     * @returns {object} Internal complete user-data snapshot. */
+    notificationSnapshot: () => ({
+      subscriptions: database.select().from(subscriptions).all(),
+      deliveries: database.select().from(deliveries).all(),
+      reminderAttempts: database.select().from(reminderAttempts).all(),
+      reminderPreferences: database.select().from(reminderPreferences).all(),
+      reminderSnoozes: database.select().from(reminderSnoozes).all(),
+    }),
+    /** Remove notification enrollments, delivery history and preferences after financial deletion.
+     * @returns {void} User configuration cleared inside the caller's transaction. */
+    deleteNotifications: () => {
+      database.delete(subscriptions).run();
+      database.delete(deliveries).run();
+      database.delete(reminderAttempts).run();
+      database.delete(reminderPreferences).run();
+      database.delete(reminderSnoozes).run();
+    },
     /** Replace only financial rows in foreign-key order; subscriptions and notification history remain intact.
      * @param {RestorableWorkspace} data - Fully validated effective source. @returns {void} Replacement writes. */
     replace: (data: RestorableWorkspace) => {

@@ -11,7 +11,7 @@ import { createApp } from '../../app/createApp.js';
 import { createLogger } from '../../lib/logger/logger.js';
 import { accounts, transactions, recurring } from '../../db/schema/budget.js';
 import { receipts } from '../../db/schema/receipts.js';
-import { scheduleSettings } from '../../db/schema/schedules.js';
+import { scheduleSettings, skippedOccurrences } from '../../db/schema/schedules.js';
 import { actualFixture, actualEditorFixture } from '../../../../scripts/actualFixtures';
 import { convertActual } from '../../../../frontend/src/features/actual/convertActual';
 const settings = parseDatabaseEnvironment();
@@ -238,5 +238,85 @@ describe('atomic native Actual import API on file-backed SQLite', () => {
       expect([400, 409]).toContain(response.status);
     }
     expect(postings()).toHaveLength(1);
+  });
+});
+
+describe('Actual next-date persistence', () => {
+  it('reviews a legacy upgrade, rejects a stale skip revision and reopens with exact progress', async () => {
+    const source = actualFixture();
+    const legacy = convertActual(source, JSON.stringify({ id: 'due-upgrade' }));
+    const initial = { file: legacy, currencyConfirmed: true };
+    const first = (await request(app()).post(`${path}/preview`).send(initial).expect(200)).body.data;
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...initial, revision: first.revision })
+      .expect(200);
+    const before = postings();
+    source.schedules_next_date = [
+      {
+        id: 'next',
+        schedule_id: 'rent',
+        base_next_date: 20261003,
+        local_next_date: 20261203,
+        base_next_date_ts: 10,
+        local_next_date_ts: 10,
+      },
+    ];
+    const current = { file: convertActual(source, JSON.stringify({ id: 'due-upgrade' })), currencyConfirmed: true };
+    const review = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    expect(review.added).toMatchObject({ recurring: 0, transactions: 0, skippedOccurrences: 1 });
+    expect(client.database.select().from(skippedOccurrences).all()).toEqual([]);
+    const ruleId = current.file.recurring[0]!.id;
+    client.database.insert(skippedOccurrences).values({ recurringId: ruleId, date: '2027-01-03' }).run();
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...current, revision: review.revision })
+      .expect(409);
+    const fresh = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...current, revision: fresh.revision })
+      .expect(200);
+    expect(postings()).toEqual(before);
+    client.sqlite.close();
+    client = openDatabase({ filePath: resolve(directory, 'app.sqlite'), busyTimeout: 0 });
+    expect(
+      client.database
+        .select()
+        .from(skippedOccurrences)
+        .all()
+        .map((row) => row.date)
+        .sort(),
+    ).toEqual(['2026-11-03', '2027-01-03']);
+    const repeat = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    expect(Object.values(repeat.added).every((value) => value === 0)).toBe(true);
+  });
+  it('rolls back every new financial row if a late progress insert fails', async () => {
+    const originalAccounts = client.database.select().from(accounts).all();
+    const originalPostings = postings();
+    const source = actualFixture();
+    source.schedules_next_date = [
+      {
+        id: 'next',
+        schedule_id: 'rent',
+        base_next_date: 20261003,
+        local_next_date: 20261203,
+        base_next_date_ts: 10,
+        local_next_date_ts: 10,
+      },
+    ];
+    const current = { file: convertActual(source, JSON.stringify({ id: 'due-rollback' })), currencyConfirmed: true };
+    const review = (await request(app()).post(`${path}/preview`).send(current).expect(200)).body.data;
+    client.sqlite.exec(
+      'CREATE TRIGGER reject_progress BEFORE INSERT ON skipped_occurrences ' +
+        "BEGIN SELECT RAISE(ABORT, 'simulated progress failure'); END",
+    );
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ ...current, revision: review.revision })
+      .expect(409);
+    expect(client.database.select().from(accounts).all()).toEqual(originalAccounts);
+    expect(client.database.select().from(recurring).all()).toEqual([]);
+    expect(postings()).toEqual(originalPostings);
   });
 });

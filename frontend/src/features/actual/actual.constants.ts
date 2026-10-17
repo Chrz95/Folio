@@ -1,6 +1,6 @@
 /** Native archive limits and stable import identity; no Actual credentials are used. */
 export const ACTUAL = {
-  importerVersion: '1.10.2',
+  importerVersion: '1.13.0',
   scheduleOccurrences: 5000,
   diagnosticBytes: 16 * 1024,
   weekMilliseconds: 604800000,
@@ -58,6 +58,7 @@ export const SOURCE_TABLES = [
   'payees',
   'rules',
   'schedules',
+  'schedules_next_date',
   'category_mapping',
   'payee_mapping',
   'preferences',

@@ -15,6 +15,9 @@ import { workspaceSnapshot } from '../receipts/workspaceSnapshot.js';
 import { workspaceSchema } from './backupSchema.js';
 import { validateBackupRelations } from './backupRelations.js';
 import { workspaceFixture } from '../../../../scripts/workspaceFixture';
+import { actualFixture } from '../../../../scripts/actualFixtures';
+import { convertActual } from '../../../../frontend/src/features/actual/convertActual';
+import { actualReplacement } from '../../../../frontend/src/features/actual/actualReplacement';
 import { createWorkspaceRepository } from './workspace.repository.js';
 const root = parseDatabaseEnvironment().testDirectory;
 const path = '/api/v1/workspace/import';
@@ -210,5 +213,109 @@ describe('reviewed workspace replacement on real file-backed SQLite', () => {
       .set('Content-Type', 'application/json')
       .send(' '.repeat(16777216 + 1))
       .expect(413);
+  });
+});
+
+describe('confirmed complete app-data deletion', () => {
+  const deletePath = '/api/v1/workspace/delete';
+  it('previews without private values and rejects missing, lowercase or padded consent', async () => {
+    const before = workspaceSnapshot(client);
+    const preview = (await request(app()).post(`${deletePath}/preview`).send({}).expect(200)).body.data;
+    expect(JSON.stringify(preview)).not.toContain('Previous posting');
+    expect(JSON.stringify(preview)).not.toContain('fcm.googleapis.com');
+    for (const confirmation of [undefined, '', 'delete', ' DELETE', 'DELETE ']) {
+      await request(app())
+        .post(`${deletePath}/commit`)
+        .send({ revision: preview.revision, confirmation, acknowledged: true })
+        .expect(400);
+    }
+    await request(app())
+      .post(`${deletePath}/commit`)
+      .send({ revision: preview.revision, confirmation: 'DELETE', acknowledged: false })
+      .expect(400);
+    expect(workspaceSnapshot(client)).toEqual(before);
+    expect(client.database.select().from(subscriptions).all()).toHaveLength(1);
+  });
+  it('deletes every user table, preserves migrations and reopens empty', async () => {
+    createWorkspaceRepository(client).atomic(() => createWorkspaceRepository(client).replace(data));
+    const preview = (await request(app()).post(`${deletePath}/preview`).send({}).expect(200)).body.data;
+    await request(app())
+      .post(`${deletePath}/commit`)
+      .send({ revision: preview.revision, confirmation: 'DELETE', acknowledged: true })
+      .expect(200);
+    const tables = client.sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as {
+      name: string;
+    }[];
+    for (const { name } of tables.filter((row) => !row.name.startsWith('sqlite_') && !row.name.includes('drizzle'))) {
+      const count = client.sqlite.prepare(`SELECT COUNT(*) AS count FROM "${name}"`).get() as { count: number };
+      expect(count.count, name).toBe(0);
+    }
+    expect(client.sqlite.prepare('PRAGMA integrity_check').get()).toEqual({ integrity_check: 'ok' });
+    client.sqlite.close();
+    client = openDatabase({ filePath: resolve(directory, 'app.sqlite'), busyTimeout: 0 });
+    expect(workspaceSnapshot(client).accounts).toEqual([]);
+    const repeat = (await request(app()).post(`${deletePath}/preview`).send({}).expect(200)).body.data;
+    expect(repeat.counts.every((row: { before: number }) => row.before === 0)).toBe(true);
+    await request(app())
+      .post(`${deletePath}/commit`)
+      .send({ revision: repeat.revision, confirmation: 'DELETE', acknowledged: true })
+      .expect(200);
+  });
+  it.each(['financial', 'notifications'])('rejects a changed %s revision before deleting any rows', async (kind) => {
+    const preview = (await request(app()).post(`${deletePath}/preview`).send({}).expect(200)).body.data;
+    if (kind === 'financial') {
+      client.database.update(transactions).set({ notes: 'Late edit' }).where(eq(transactions.id, previousId)).run();
+    } else {
+      client.database.update(reminderPreferences).set({ deliveryTime: '13:00' }).run();
+    }
+    const before = workspaceSnapshot(client);
+    await request(app())
+      .post(`${deletePath}/commit`)
+      .send({ revision: preview.revision, confirmation: 'DELETE', acknowledged: true })
+      .expect(409);
+    expect(workspaceSnapshot(client)).toEqual(before);
+    expect(client.database.select().from(subscriptions).all()).toHaveLength(1);
+  });
+  it('rolls back financial deletion when a later notification-table deletion fails', async () => {
+    const before = workspaceSnapshot(client);
+    const preview = (await request(app()).post(`${deletePath}/preview`).send({}).expect(200)).body.data;
+    client.sqlite.exec(
+      'CREATE TRIGGER reject_delete BEFORE DELETE ON reminder_preferences ' +
+        "BEGIN SELECT RAISE(ABORT, 'simulated delete failure'); END",
+    );
+    await request(app())
+      .post(`${deletePath}/commit`)
+      .send({ revision: preview.revision, confirmation: 'DELETE', acknowledged: true })
+      .expect(409);
+    expect(workspaceSnapshot(client)).toEqual(before);
+    expect(client.database.select().from(subscriptions).all()).toHaveLength(1);
+    expect(client.database.select().from(reminderAttempts).all()).toHaveLength(1);
+  });
+});
+
+describe('Actual financial overwrite through the workspace API', () => {
+  it('replaces colliding edited identities and removes unrelated data while retaining device settings', async () => {
+    const incoming = actualReplacement(convertActual(actualFixture(), JSON.stringify({ id: 'actual-overwrite-api' })));
+    const repository = createWorkspaceRepository(client);
+    repository.atomic(() => repository.replace(incoming));
+    client.database
+      .update(accounts)
+      .set({ name: 'Edited imported account' })
+      .where(eq(accounts.id, incoming.accounts[0]!.id))
+      .run();
+    const old = workspaceSnapshot(client);
+    const preview = (await request(app()).post(`${path}/preview`).send({ data: incoming }).expect(200)).body.data;
+    expect(workspaceSnapshot(client)).toEqual(old);
+    await request(app())
+      .post(`${path}/commit`)
+      .send({ data: incoming, revision: preview.revision, confirmation: 'REPLACE' })
+      .expect(200);
+    expect(workspaceSchema.parse(workspaceSnapshot(client)).accounts).toEqual(incoming.accounts);
+    expect(workspaceSnapshot(client).transactions).toEqual(incoming.transactions);
+    expect(client.database.select().from(subscriptions).all()).toHaveLength(1);
+    expect(client.database.select().from(reminderPreferences).all()[0]!.deliveryTime).toBe('12:00');
+    client.sqlite.close();
+    client = openDatabase({ filePath: resolve(directory, 'app.sqlite'), busyTimeout: 0 });
+    expect(workspaceSnapshot(client).accounts).toEqual(incoming.accounts);
   });
 });

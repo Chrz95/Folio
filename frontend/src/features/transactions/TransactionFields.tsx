@@ -30,11 +30,12 @@ export function TransactionFields({ form }: TransactionFieldsProps) {
           />
         </label>
         <label>
-          {form.isRecurring ? 'First payment date' : 'Date'}
+          {form.isRecurring ? 'Due date' : 'Date'}
           <input
             name="date"
             type="date"
-            defaultValue={date}
+            value={date}
+            onChange={(event) => form.setDate(event.target.value)}
             required
           />
         </label>

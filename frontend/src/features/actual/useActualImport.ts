@@ -8,6 +8,8 @@ import { previewActual, commitActual } from './actualService';
  * @returns {object} Import workflow state and actions. */
 export function useActualImport() {
   const { data, reload } = useWorkspace();
+  const [mode, setMode] = useState<'add' | 'replace'>('add');
+  const [overwriteBusy, setOverwriteBusy] = useState(false);
   const [source, setSource] = useState<ActualFile | null>(null);
   const [includeBudgets, setIncludeBudgets] = useState(true);
   const [includeSchedules, setIncludeSchedules] = useState(true);
@@ -27,6 +29,7 @@ export function useActualImport() {
         monthlyBudgets: includeBudgets ? source.monthlyBudgets : [],
         recurring: includeSchedules ? source.recurring : [],
         scheduleSettings: includeSchedules ? source.scheduleSettings : [],
+        skippedOccurrences: includeSchedules ? source.skippedOccurrences : [],
         transactions: includeSchedules
           ? source.transactions
           : source.transactions.map((row) => ({ ...row, recurringId: null })),
@@ -122,7 +125,18 @@ export function useActualImport() {
     setReading(false);
     setBusy(false);
   }
+  /** Switching import behavior invalidates the additive acknowledgment and review.
+   * @param {'add' | 'replace'} next - Explicit behavior. @returns {void} New mode awaiting review. */
+  function changeMode(next: 'add' | 'replace') {
+    setMode(next);
+    setError('');
+    setReviewed(null);
+    setAcknowledged(false);
+  }
   return {
+    mode,
+    setMode: changeMode,
+    setOverwriteBusy,
     isReading,
     sourceSummary,
     file,
@@ -134,7 +148,7 @@ export function useActualImport() {
     setCurrency,
     acknowledged,
     setAcknowledged,
-    busy,
+    busy: busy || overwriteBusy,
     error,
     result,
     review,

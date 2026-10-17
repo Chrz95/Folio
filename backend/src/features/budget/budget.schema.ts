@@ -1,3 +1,4 @@
+import { SCHEDULE_ENDING } from './scheduleEnding.js';
 import { z } from 'zod';
 import { categoryNameSchema } from '../planning/planning.schema.js';
 import { BUDGET_LIMITS } from './budget.constants.js';
@@ -26,6 +27,9 @@ export const transactionSchema = baseTransaction
 export const recurringSchema = baseTransaction
   .extend({
     frequency: z.enum(['once', 'weekly', 'monthly', 'yearly']),
+    endDate: z.iso.date().nullable().optional(),
+    repetitions: z.number().int().min(1).max(SCHEDULE_ENDING.maximum).optional(),
+    countFrom: z.iso.date().optional(),
     reminderDays: z.number().int().min(0).max(BUDGET_LIMITS.maximumReminder),
   })
   .strict()

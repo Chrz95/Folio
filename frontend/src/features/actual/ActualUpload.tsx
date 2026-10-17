@@ -37,6 +37,17 @@ export function ActualUpload({ wizard }: { wizard: ActualWizard }) {
         <div className="actual-options">
           <ActualSourceSummary wizard={wizard} />
           <label>
+            Import behavior
+            <select
+              value={wizard.mode}
+              disabled={wizard.busy}
+              onChange={(event) => wizard.setMode(event.target.value as 'add' | 'replace')}
+            >
+              <option value="add">Add to current data</option>
+              <option value="replace">Overwrite current financial workspace</option>
+            </select>
+          </label>
+          <label>
             <input
               type="checkbox"
               checked={wizard.includeBudgets}
@@ -63,13 +74,15 @@ export function ActualUpload({ wizard }: { wizard: ActualWizard }) {
             />
             I confirm this budget uses EUR and two decimal places. No currency conversion is performed.
           </label>
-          <button
-            className="button primary"
-            disabled={!wizard.currency || wizard.busy}
-            onClick={() => void wizard.preview()}
-          >
-            {wizard.busy ? 'Working…' : 'Review import'}
-          </button>
+          {wizard.mode === 'add' && (
+            <button
+              className="button primary"
+              disabled={!wizard.currency || wizard.busy}
+              onClick={() => void wizard.preview()}
+            >
+              {wizard.busy ? 'Working…' : 'Review import'}
+            </button>
+          )}
         </div>
       )}
     </section>

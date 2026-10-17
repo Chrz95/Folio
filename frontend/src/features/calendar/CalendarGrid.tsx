@@ -1,6 +1,7 @@
 import { useWorkspace } from '../../app/WorkspaceContext';
 import { DAYS, VALUE } from '../../constants/app.constants';
-import { getOccurrences } from '../transactions/recurrence';
+import { calendarEntries, PAYMENT_LABEL } from './calendarEntries';
+import { useToday } from '../../hooks/useToday';
 import { dateKey, money } from '../../utils/format';
 interface CalendarGridProps {
   selectedDate: string;
@@ -13,6 +14,7 @@ interface CalendarGridProps {
  * @returns {JSX.Element} Calendar month. */
 export function CalendarGrid({ selectedDate, onDateSelect }: CalendarGridProps) {
   const { data, month } = useWorkspace();
+  const today = useToday();
   const first = new Date(`${month}T12:00:00`);
   first.setDate(1);
   const start = new Date(first);
@@ -22,9 +24,7 @@ export function CalendarGrid({ selectedDate, onDateSelect }: CalendarGridProps) 
     day.setDate(start.getDate() + index);
     return { key: dateKey(day), number: day.getDate(), inMonth: day.getMonth() === first.getMonth() };
   });
-  const occurrences = getOccurrences(data, days[0]?.key ?? month, days.at(-1)?.key ?? month).filter(
-    (entry) => !entry.isPaid,
-  );
+  const all = calendarEntries(data, days[0]?.key ?? month, days.at(-1)?.key ?? month, today);
   return (
     <div className="calendar-grid">
       <div className="calendar-weekdays">
@@ -34,10 +34,7 @@ export function CalendarGrid({ selectedDate, onDateSelect }: CalendarGridProps) 
       </div>
       <div className="calendar-days">
         {days.map((day) => {
-          const entries = [
-            ...data.transactions.filter((entry) => entry.date === day.key),
-            ...occurrences.filter((entry) => entry.date === day.key),
-          ];
+          const entries = all.filter((row) => row.entry.date === day.key);
           return (
             <button
               key={day.key}
@@ -46,26 +43,26 @@ export function CalendarGrid({ selectedDate, onDateSelect }: CalendarGridProps) 
               aria-label={`${day.key}, ${entries.length} transactions`}
               aria-pressed={day.key === selectedDate}
             >
-              <span className={day.key === dateKey() ? 'today-number' : ''}>{day.number}</span>
+              <span className={day.key === today ? 'today-number' : ''}>{day.number}</span>
               <div className="calendar-events">
-                {entries.slice(0, VALUE.visibleCalendarEvents).map((entry) => (
+                {entries.map(({ entry, status, key, isPaused, isPlanned }) => (
                   <span
-                    key={`${entry.id}:${entry.date}`}
-                    className={`calendar-event ${entry.type} ${'frequency' in entry ? 'planned' : ''}`}
+                    key={key}
+                    className={`calendar-event ${status} ${isPlanned ? 'planned' : ''}`}
+                    title={`${entry.name} · ${PAYMENT_LABEL[status]}${isPaused ? ' · Paused' : ''}`}
+                    aria-label={`${entry.name}: ${PAYMENT_LABEL[status]}${isPaused ? ', paused' : ''}`}
                   >
                     <span>{entry.name}</span>
                     <b>{money(entry.amount)}</b>
                   </span>
                 ))}
-                {entries.length > VALUE.visibleCalendarEvents && (
-                  <small>+{entries.length - VALUE.visibleCalendarEvents} more</small>
-                )}
               </div>
               <div className="calendar-dots">
-                {entries.slice(0, VALUE.visibleCalendarDots).map((entry) => (
+                {entries.map(({ key, status }) => (
                   <i
-                    key={entry.id}
-                    className={entry.type}
+                    key={key}
+                    className={status}
+                    aria-hidden="true"
                   />
                 ))}
               </div>

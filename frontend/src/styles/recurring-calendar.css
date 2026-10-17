@@ -1,0 +1,255 @@
+:root {
+  --status-confirmed: #176b42;
+  --status-confirmed-bg: #e6f4eb;
+  --status-unconfirmed: #a94c00;
+  --status-unconfirmed-bg: #fff0dd;
+  --status-overdue: #ad2836;
+  --status-overdue-bg: #fde9ec;
+}
+.calendar-event.confirmed,
+.payment-status.confirmed {
+  color: var(--status-confirmed);
+  background: var(--status-confirmed-bg);
+}
+.calendar-event.unconfirmed,
+.payment-status.unconfirmed {
+  color: var(--status-unconfirmed);
+  background: var(--status-unconfirmed-bg);
+}
+.calendar-event.overdue,
+.payment-status.overdue {
+  color: var(--status-overdue);
+  background: var(--status-overdue-bg);
+}
+.calendar-dots i.confirmed,
+.small-dot.status-confirmed {
+  background: var(--status-confirmed);
+}
+.calendar-dots i.unconfirmed,
+.small-dot.status-unconfirmed {
+  background: var(--status-unconfirmed);
+}
+.calendar-dots i.overdue,
+.small-dot.status-overdue {
+  background: var(--status-overdue);
+}
+.calendar-dots {
+  flex-wrap: wrap;
+}
+.agenda-item.confirmed {
+  border-left: 3px solid var(--status-confirmed);
+}
+.agenda-item.confirmed small,
+.agenda-item.confirmed b {
+  color: var(--status-confirmed);
+}
+.agenda-item.unconfirmed {
+  border-left: 3px solid var(--status-unconfirmed);
+}
+.agenda-item.unconfirmed small {
+  color: var(--status-unconfirmed);
+}
+.agenda-item.overdue {
+  border-left: 3px solid var(--status-overdue);
+}
+.agenda-item.overdue small {
+  color: var(--status-overdue);
+}
+.type-pill.expense {
+  color: var(--status-overdue);
+  background: var(--status-overdue-bg);
+}
+.type-pill.income {
+  color: var(--status-confirmed);
+  background: var(--status-confirmed-bg);
+}
+.type-pill.transfer {
+  color: var(--text);
+  background: var(--hover);
+}
+.recurring-view-toolbar,
+.recurring-view-toggle {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.recurring-view-toggle {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.recurring-view-toolbar {
+  margin: 24px 0;
+}
+.recurring-view-toolbar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.recurring-view-toggle button[aria-pressed='true'] {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--text);
+}
+.recurring-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+.recurring-table {
+  border-collapse: collapse;
+  min-width: 1020px;
+  width: 100%;
+  font-size: 0.82rem;
+}
+.recurring-table caption {
+  padding: 18px;
+  text-align: left;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.recurring-table th,
+.recurring-table td {
+  text-align: left;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.recurring-table thead {
+  background: var(--hover);
+}
+.recurring-table thead th {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.recurring-table thead button {
+  text-align: left;
+  padding: 0;
+}
+.recurring-table th[scope='row'] {
+  min-width: 190px;
+  max-width: 270px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.recurring-table th[scope='row'] strong {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.recurring-table small {
+  display: block;
+  margin-top: 10px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.recurring-table-amount {
+  white-space: nowrap;
+  font-weight: 600;
+}
+.payment-status {
+  display: inline-block;
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 0.76rem;
+}
+.recurring-pause {
+  display: block;
+  margin-top: 8px;
+}
+.recurring-row-actions {
+  min-width: 210px;
+}
+.recurring-table .schedule-controls {
+  text-align: left;
+}
+:root[data-theme='dark'] {
+  --status-confirmed: #91dfaf;
+  --status-confirmed-bg: #183e2c;
+  --status-unconfirmed: #ffc17d;
+  --status-unconfirmed-bg: #453019;
+  --status-overdue: #ffacb4;
+  --status-overdue-bg: #49242c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --status-confirmed: #91dfaf;
+    --status-confirmed-bg: #183e2c;
+    --status-unconfirmed: #ffc17d;
+    --status-unconfirmed-bg: #453019;
+    --status-overdue: #ffacb4;
+    --status-overdue-bg: #49242c;
+  }
+}
+
+.editor-date-preview {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+.editor-date-preview h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+.editor-date-preview p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.editor-date-preview ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+.editor-date-preview li {
+  padding: 6px 0;
+  font-size: 0.82rem;
+}
+.editor-date-preview .payment-status {
+  margin-left: 12px;
+}
+
+.button.danger {
+  color: var(--status-overdue);
+  background: var(--status-overdue-bg);
+  border: 1px solid currentColor;
+}
+
+.schedule-action {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  display: inline-grid;
+  place-items: center;
+  vertical-align: middle;
+  padding: 0;
+}
+.recurring-row-actions > .schedule-action,
+.recurring-row-actions > .occurrence-actions {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.recurring-row-actions > .occurrence-actions {
+  margin-left: 6px;
+  gap: 6px;
+}
+.occurrence-actions .schedule-action {
+  flex: 0 0 36px;
+}
+@media (pointer: coarse) {
+  .schedule-action {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .occurrence-actions .schedule-action {
+    flex-basis: 44px;
+  }
+}

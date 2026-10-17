@@ -3,6 +3,108 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.14 verification
+
+352 tests in forty-one files pass, including all existing delete/overwrite, import, ledger and reminder checks.
+
+The latest published 1.13 source was restored into a separate checkout before editing; the older local checkout and
+its unfinished state were retained. The recovered source includes confirmed deletion and overwrite imports. Tests
+run with `DATABASE_FILE_PATH=./data/app.sqlite`, using only unique disposable test databases. No user ledger is used.
+The new checkout reuses the existing installed dependency tree after confirming identical pinned dependencies; a fresh
+installation hit a malformed package-store index. No dependency versions were changed to work around that cache.
+
+New count tests compare browser/server ending calculations for month-end clamping, leap years, later clamped due dates,
+weekly DST boundaries and one-time rules. Invalid/fractional/zero/oversized counts, incompatible ending fields,
+off-pattern starts, expansion limits and calendar overflow reject. Editor interactions cover finite previews, saved
+count payloads, remaining counts on reopen, unchanged anchors, one-time restrictions and clearing an ending.
+
+Real SQLite HTTP tests cover finite creation/reopen, the inclusive last payment, rejection beyond the end, pause/skip/
+history retention when changing counts, invalid inputs, explicit ending removal and rollback if a late ending write
+fails after a rule edit or creation. Browser tests verify one write for rule plus ending, stored-field cleanup, finite
+JSON round-trips and quota-failure preservation. Icon assertions check SVG-only content, names and titles; existing
+confirmation/skip/paused interactions continue through the same accessible buttons.
+
+The original supplied Dockerfile is unchanged. No schema/dependency migration is added; counts use existing inclusive
+end-date controls. Old recurring write payloads keep their ending when no ending fields are provided. Full production
+and isolated demo builds, strict types, lint, formatting, JSDoc and source/component bounds are checked. Browser visual,
+real device, Docker/ARM64 and actual notification delivery remain unverified.
+
+## Version 1.13 verification
+
+331 tests in thirty-nine files pass, along with production build/artifact verification, strict types, zero-warning
+lint, formatting and named-source documentation checks.
+
+Deletion coverage checks read-only count summaries without private subscription/receipt values, missing/lowercase/
+padded confirmation words, the explicit acknowledgment, cancellation, stale financial/notification revisions and
+late notification-table rollback. A populated file-backed database is checked for zero rows in all user tables,
+integrity and empty reopened state, including repeated deletion. A simulated provider await confirms that a deleted
+device cannot recreate attempt history. No real notification provider or user application database is contacted.
+
+Browser interaction tests exercise the complete confirmation dialog, exact `DELETE`, one blank financial snapshot,
+no automatic sample restoration, owned preference cleanup, preserved unrelated storage, cross-tab hashing races,
+blocked writes and separately
+reported preference-cleanup failures. Server-mode client tests verify the actual typed confirmation payload and ensure
+failed HTTP deletion does not clear browser data. Settings refresh their controls after a successful reset.
+
+Actual overwrite tests cover validation of balances/relationships, paid-versus-skipped dates, paused schedules,
+conflicting edited identities, currency consent, read-only review, lowercase/exact `REPLACE`, invalidation after scope
+changes and a fresh source following a successful replacement. Both native-derived and Folio JSON replacements use
+the existing transactional workspace endpoint. Real SQLite HTTP coverage replaces colliding Actual identities while
+retaining notification preferences/devices and verifies reopened persistence. Existing replacement rollback, source
+validation, quota and revision tests remain part of the suite. Test source data is entirely fictional.
+
+The production and private demonstration modes are built independently. Strict types, zero-warning lint, formatting,
+JSDoc and source/component bounds remain checked. The supplied Dockerfile is retained byte-for-byte; registry Compose
+uses tag 1.13.0 and ports 8081/5001. Schema, migrations and dependencies are unchanged. Browser visual/accessibility
+and real-device audits, Docker/ARM64 execution and actual push delivery remain unverified here.
+
+## Version 1.12 verification
+
+313 tests in thirty-seven files pass.
+
+New regressions exercise matching versus stale Actual next-date revisions, malformed/off-pattern/duplicate progress,
+tombstoned rows in a native SQLite ZIP, completed finite/one-time schedules, counted endings, exact historical links,
+legacy progress upgrades, unchanged financial values, repeat imports and invalid skipped-date graph relationships.
+The old normalized payload remains accepted through a default empty skipped-date list. Browser and server planners
+share the same validation/merge behavior. SQLite HTTP tests cover read-only review, acknowledgment/revision boundaries,
+late progress-insert rollback, reopened persistence and retained unrelated skips. Rendered UI verifies reviewed progress
+repairs without financial-history writes; editor tests verify an enabled Due date, unchanged-anchor saves, immediate
+weekly/monthly previews, cleared-skip previews, pause/end visibility, recorded/skip filtering and ending validation.
+
+The attached real export was also decoded and imported into a disposable migrated SQLite file, first with legacy
+progress omitted and then through the new reviewed upgrade. All 15 schedules, 16 postings and six endings persist;
+11 source-advanced dates resolve to ten already recorded occurrences plus one added skip. Twelve pending dates match
+Actual's effective next dates; one source next date is already recorded, so its next unconfirmed date advances one
+month. Two fully paid ended schedules have no pending dates. Account
+balances match, original financial rows/anchors/settings are identical, reopened state is correct and a repeat review
+adds zero rows. The temporary database was removed; no application database or notification provider was used.
+
+The supplied export remains private and is never seeded into the preview or fixtures. Public fixtures are fictional.
+The native effective-date rule was checked against Actual's upstream AQL `v_schedules` mapping and schedule update code:
+`packages/loot-core/src/server/aql/schema/index.ts` and `packages/loot-core/src/server/schedules/app.ts`.
+
+Production/demo builds, formatting, strict frontend/backend/worker types, zero-warning lint, named-source JSDoc and
+source/component bounds are checked. The source Dockerfile is compared byte-for-byte with the supplied file. Schema
+and dependencies are unchanged. Browser layout/device notification delivery and Docker/ARM64 execution remain unverified.
+
+## Version 1.11 verification
+
+300 tests in thirty-six files pass, along with strict frontend/backend/worker types, zero-warning lint, formatting,
+named-source JSDoc and source/component line bounds.
+
+Calendar/recurring tests cover weekly instances, recorded-payment deduplication and original amounts, past/today/future
+colors, paused planning, disabled confirmation, reversible skip, inclusive endings, month-end/leap-year expansion,
+all entries on a busy date and a foreground date change. Date sorting uses UTC civil-day distances, including DST
+boundaries, past/future ties, distant starts, annual next dates, overdue counts and completed rules last. Name/amount
+sorting, the default table, optional cards and income/expense labels are covered through rendered UI interactions.
+Confirmation writes exactly one ledger payment; display/sort changes never write financial data. Existing schedule,
+import, workspace, SQLite and notification tests remain part of the full suite. Fixtures contain fictional data only.
+
+The production and demonstration modes are built separately. The supplied Dockerfile and persistent schema are
+unchanged. Registry Compose defaults to 1.11.0 with ports 8081/5001. No new dependency is added. Browser layout audits,
+Docker/ARM64 execution and live notification delivery remain unverified; DOM tests do not replace device testing.
+The schedule engine's documented 5,000-occurrence cap remains in effect.
+
 ## Version 1.10.2 verification
 
 The supplied native ZIP was decoded locally with SQL.js and imported into a new disposable, migrated SQLite database.

@@ -37,6 +37,10 @@ export const actualFileSchema = z
     scheduleSettings: z
       .array(z.object({ recurringId: z.uuid(), isPaused: z.literal(true), endDate: z.iso.date().nullable() }).strict())
       .max(ACTUAL.rows),
+    skippedOccurrences: z
+      .array(z.object({ recurringId: z.uuid(), date: z.iso.date() }).strict())
+      .max(ACTUAL.rows)
+      .default([]),
     monthlyBudgets: z
       .array(
         z
@@ -79,5 +83,12 @@ export const actualCommitSchema = actualInputSchema
 export type ActualFile = z.infer<typeof actualFileSchema>;
 export type ActualData = Pick<
   ActualFile,
-  'accounts' | 'customCategories' | 'transactions' | 'recurring' | 'monthlyBudgets' | 'clearances' | 'scheduleSettings'
+  | 'accounts'
+  | 'customCategories'
+  | 'transactions'
+  | 'recurring'
+  | 'monthlyBudgets'
+  | 'clearances'
+  | 'scheduleSettings'
+  | 'skippedOccurrences'
 >;

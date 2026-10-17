@@ -36,18 +36,18 @@ export default function CalendarPage() {
       <div className="calendar-toolbar">
         <div className="chart-legend">
           <span>
-            <i className="small-dot green" />
-            Income
+            <i className="small-dot status-unconfirmed" />
+            Unconfirmed
           </span>
           <span>
-            <i className="small-dot ochre" />
-            Expense
+            <i className="small-dot status-overdue" />
+            Overdue
           </span>
           <span>
-            <i className="small-dot blue" />
-            Transfer
+            <i className="small-dot status-confirmed" />
+            Confirmed
           </span>
-          <span className="muted">Dashed = planned</span>
+          <span className="muted">Paused schedules stay visible</span>
         </div>
         <button
           className="text-button"

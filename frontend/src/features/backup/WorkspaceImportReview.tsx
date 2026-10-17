@@ -1,3 +1,4 @@
+import { BACKUP } from './backup.constants';
 import type { WorkspaceImporter } from './useBackupRestore';
 /** Review every affected collection and explicitly confirm a replacement.
  * @param {WorkspaceImporter} state - Current importer. @returns {JSX.Element | null} Review controls. */
@@ -33,11 +34,21 @@ export function WorkspaceImportReview({ state }: { state: WorkspaceImporter }) {
         />
         I understand this replaces the current financial workspace.
       </label>
+      <label>
+        Type REPLACE to overwrite existing data
+        <input
+          value={state.confirmation}
+          autoComplete="off"
+          spellCheck={false}
+          disabled={state.isBusy}
+          onChange={(event) => state.setConfirmation(event.target.value)}
+        />
+      </label>
       <div className="settings-actions">
         <button
           className="button primary"
           type="button"
-          disabled={state.isBusy || !state.acknowledged}
+          disabled={state.isBusy || !state.acknowledged || state.confirmation !== BACKUP.confirmation}
           onClick={() => void state.restore()}
         >
           Replace workspace

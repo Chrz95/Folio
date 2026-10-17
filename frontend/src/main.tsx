@@ -10,6 +10,7 @@ import './styles/release2.css';
 import './styles/planning.css';
 import './styles/reports.css';
 import './styles/bulk.css';
+import './styles/recurring-calendar.css';
 const root = document.getElementById('root');
 if (!root) {
   throw new Error('Application root is missing.');

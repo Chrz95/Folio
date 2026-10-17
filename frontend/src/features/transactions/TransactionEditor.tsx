@@ -6,6 +6,7 @@ import type { EditorState, TransactionType } from '../../types/budget';
 import { useWorkspace } from '../../app/WorkspaceContext';
 import { useTransactionForm } from './useTransactionForm';
 import { TransactionFields } from './TransactionFields';
+import { RecurringDates } from './RecurringDates';
 import { RecurrenceFields } from './RecurrenceFields';
 interface TransactionEditorProps {
   editor: EditorState;
@@ -74,6 +75,7 @@ export function TransactionEditor({ editor }: TransactionEditorProps) {
           )}
           <TransactionFields form={form} />
           <RecurrenceFields form={form} />
+          <RecurringDates form={form} />
           <TransactionSupport form={form} />
           {(form.error || serverError) && (
             <p

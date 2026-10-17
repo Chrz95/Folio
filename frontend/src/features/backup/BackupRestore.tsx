@@ -19,7 +19,10 @@ export function BackupRestore() {
           }}
         />
       </label>
-      <p>Choose a Folio workspace JSON export. Export your current workspace above for a recovery copy first.</p>
+      <p>
+        This overwrites the current financial workspace. Choose a Folio workspace JSON export. Export your current
+        workspace above for a recovery copy first.
+      </p>
       <p>
         {environment.isDemo
           ? 'Preview limit: 8 MiB JSON and 2 MiB of receipt files, saved in this browser.'

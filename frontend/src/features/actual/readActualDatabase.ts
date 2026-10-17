@@ -33,6 +33,7 @@ export function readActualDatabase(database: Database, metadata: string) {
     payees: [],
     rules: [],
     schedules: [],
+    schedules_next_date: [],
     category_mapping: [],
     payee_mapping: [],
     preferences: [],

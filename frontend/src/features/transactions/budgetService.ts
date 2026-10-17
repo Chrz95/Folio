@@ -1,3 +1,5 @@
+import { resolveScheduleEnding } from './scheduleEnding';
+import type { EndingInput } from './scheduleEnding';
 import { loadSchedules, mutateSchedule } from '../schedules/scheduleService';
 import type { ScheduleResource } from '../schedules/scheduleService';
 import { isScheduleDateEnabled } from '../schedules/schedulePolicy';
@@ -66,6 +68,14 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
     return;
   }
   const data = readDemo();
+  let storedValue = value;
+  let requestedEnd: string | null | undefined;
+  if (resource === 'recurring' && value && method !== 'DELETE') {
+    const input = value as EndingInput;
+    requestedEnd = resolveScheduleEnding(input);
+    const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
+    storedValue = fields;
+  }
   if ((resource === 'transactions' || resource === 'recurring') && value && method !== 'DELETE') {
     const input = value as Transaction;
     const previous = data[resource].find((entry) => entry.id === id);
@@ -83,7 +93,10 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
   if (resource === 'recurring' && method === 'PUT' && id && value) {
     const previous = data.recurring.find((entry) => entry.id === id);
     const input = value as RecurringTransaction;
-    const endDate = data.scheduleSettings?.find((entry) => entry.recurringId === id)?.endDate;
+    const endDate =
+      requestedEnd === undefined
+        ? data.scheduleSettings?.find((entry) => entry.recurringId === id)?.endDate
+        : requestedEnd;
     if (endDate && input.date > endDate) {
       throw new Error('Adjust the end date before moving the schedule start.');
     }
@@ -118,7 +131,14 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
       resource === 'transactions'
         ? { createdAt: previous?.createdAt ?? Date.now(), recurringId: previous?.recurringId ?? null }
         : {};
-    const record = { ...audit, ...value, id: id ?? crypto.randomUUID() };
+    const record = { ...audit, ...storedValue, id: id ?? crypto.randomUUID() };
+    if (resource === 'recurring' && requestedEnd !== undefined) {
+      const previousControl = data.scheduleSettings?.find((row) => row.recurringId === record.id);
+      data.scheduleSettings = [
+        ...(data.scheduleSettings ?? []).filter((row) => row.recurringId !== record.id),
+        { recurringId: record.id, isPaused: previousControl?.isPaused ?? false, endDate: requestedEnd },
+      ];
+    }
     const next = [...entries.filter((entry) => entry.id !== id), record];
     Object.assign(data, { [resource]: next });
   }

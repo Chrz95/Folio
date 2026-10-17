@@ -167,6 +167,10 @@ describe('portable preview backups', () => {
     await screen.findByRole('button', { name: 'Replace workspace' });
     expect(screen.getByRole('button', { name: 'Replace workspace' })).toBeDisabled();
     fireEvent.click(screen.getByLabelText('I understand this replaces the current financial workspace.'));
+    expect(screen.getByRole('button', { name: 'Replace workspace' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Type REPLACE to overwrite existing data'), {
+      target: { value: 'REPLACE' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Replace workspace' }));
     await waitFor(() => expect(readDemo().transactions).toHaveLength(0));
     expect(workspace.setNotice).toHaveBeenCalledWith(

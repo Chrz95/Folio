@@ -12,6 +12,8 @@ import { accounts, recurring, transactions } from '../../db/schema/budget.js';
 import { createReminderRepository } from '../reminders/reminders.repository.js';
 import { createReminderStateRepository } from '../reminders/reminderState.repository.js';
 import { DEFAULT_REMINDER_PREFERENCES } from '../reminders/reminders.constants.js';
+import { createWorkspaceRepository } from '../workspace/workspace.repository.js';
+import { createWorkspaceDeletion } from '../workspace/workspaceDelete.service.js';
 import { runReminderScan } from '../reminders/reminderDelivery.js';
 import { createScheduleService } from './schedule.service.js';
 import { createScheduleRepository } from './schedule.repository.js';
@@ -186,5 +188,130 @@ describe('durable schedule controls', () => {
     expect(send).toHaveBeenCalledOnce();
     const history = createReminderStateRepository(client).history();
     expect(history).toHaveLength(1);
+  });
+});
+
+describe('deleting data during reminder delivery', () => {
+  it('does not recreate attempt history after an enrolled device is deleted during a provider await', async () => {
+    client.database.update(recurring).set({ date: '2026-10-16', frequency: 'once' }).run();
+    createReminderRepository(client).save({
+      endpoint: 'https://push.example.test/deletion',
+      p256dh: 'key',
+      auth: 'key',
+    });
+    createReminderStateRepository(client).savePreferences({
+      ...DEFAULT_REMINDER_PREFERENCES,
+      timeZone: 'Europe/Athens',
+      deliveryTime: '09:00',
+    });
+    const deletion = createWorkspaceDeletion(createWorkspaceRepository(client));
+    const send = vi.fn().mockImplementation(async () => {
+      const review = deletion.preview();
+      deletion.commit(review.revision);
+      return { statusCode: 201, body: '', headers: {} };
+    });
+    await runReminderScan(client, createLogger('silent'), Date.parse('2026-10-16T07:00:00Z'), send);
+    expect(send).toHaveBeenCalledOnce();
+    expect(createReminderStateRepository(client).history()).toEqual([]);
+    expect(createReminderRepository(client).list()).toEqual([]);
+  });
+});
+
+describe('custom repetition saves', () => {
+  it('creates a counted month-end series with its inclusive ending and reopens it correctly', async () => {
+    const { id: _id, ...fields } = template;
+    const created = (
+      await request(app())
+        .post('/api/v1/recurring')
+        .send({ ...fields, date: '2028-01-31', repetitions: 3 })
+        .expect(201)
+    ).body.data;
+    expect(created).not.toHaveProperty('repetitions');
+    const state = (await request(app()).get('/api/v1/schedules').expect(200)).body.data;
+    expect(state.scheduleSettings).toContainEqual({ recurringId: created.id, isPaused: false, endDate: '2028-03-31' });
+    await request(app()).post(`/api/v1/recurring/${created.id}/pay`).send({ date: '2028-03-31' }).expect(200);
+    await request(app()).post(`/api/v1/recurring/${created.id}/pay`).send({ date: '2028-04-30' }).expect(409);
+    client.sqlite.close();
+    client = openDatabase({ filePath: join(directory, 'app.sqlite'), busyTimeout: 0 });
+    const reopened = (await request(app()).get('/api/v1/schedules').expect(200)).body.data;
+    expect(reopened.scheduleSettings).toContainEqual({
+      recurringId: created.id,
+      isPaused: false,
+      endDate: '2028-03-31',
+    });
+  });
+  it('counts from a later clamped due date while preserving pause, anchor, skips and paid history', async () => {
+    await request(app()).post(`/api/v1/recurring/${recurringId}/pay`).send({ date: '2026-01-31' }).expect(200);
+    await control(true, '2026-03-31');
+    await request(app())
+      .put('/api/v1/schedules/occurrences')
+      .send({ recurringId, date: '2026-03-31', isSkipped: true })
+      .expect(204);
+    const before = client.database.select().from(transactions).all();
+    const { id: _id, ...fields } = template;
+    await request(app())
+      .put(`/api/v1/recurring/${recurringId}`)
+      .send({ ...fields, repetitions: 3, countFrom: '2026-02-28' })
+      .expect(200);
+    const state = (await request(app()).get('/api/v1/schedules').expect(200)).body.data;
+    expect(state.scheduleSettings).toEqual([{ recurringId, isPaused: true, endDate: '2026-04-30' }]);
+    expect(state.skippedOccurrences).toEqual([{ recurringId, date: '2026-03-31' }]);
+    expect(client.database.select().from(transactions).all()).toEqual(before);
+    expect(client.database.select().from(recurring).all()[0]!.date).toBe('2026-01-31');
+  });
+  it('rejects invalid counts and conflicting ending fields before changing the rule', async () => {
+    const { id: _id, ...fields } = template;
+    for (const ending of [
+      { repetitions: 0 },
+      { repetitions: -1 },
+      { repetitions: 1.5 },
+      { repetitions: 5001 },
+      { repetitions: 3, countFrom: '2026-02-27' },
+      { countFrom: '2026-02-28' },
+      { repetitions: 3, endDate: '2026-12-31' },
+      { endDate: '2026-01-30' },
+      { repetitions: 2, frequency: 'once' },
+    ]) {
+      await request(app())
+        .put(`/api/v1/recurring/${recurringId}`)
+        .send({ ...fields, ...ending })
+        .expect(400);
+    }
+    expect(client.database.select().from(recurring).all()).toEqual([template]);
+    expect((await request(app()).get('/api/v1/schedules').expect(200)).body.data.scheduleSettings).toEqual([]);
+  });
+  it('rolls back rule creation or edits if saving their ending fails late', async () => {
+    await control(true, '2026-04-30');
+    await request(app())
+      .put('/api/v1/schedules/occurrences')
+      .send({ recurringId, date: '2026-03-31', isSkipped: true })
+      .expect(204);
+    const before = (await request(app()).get('/api/v1/schedules').expect(200)).body.data;
+    const { id: _id, ...fields } = template;
+    client.sqlite.exec(
+      'CREATE TRIGGER reject_ending BEFORE INSERT ON schedule_settings ' +
+        "BEGIN SELECT RAISE(ABORT, 'simulated ending failure'); END",
+    );
+    await request(app())
+      .post('/api/v1/recurring')
+      .send({ ...fields, repetitions: 3 })
+      .expect(409);
+    await request(app())
+      .put(`/api/v1/recurring/${recurringId}`)
+      .send({ ...fields, frequency: 'weekly', repetitions: 3 })
+      .expect(409);
+    expect(client.database.select().from(recurring).all()).toEqual([template]);
+    expect((await request(app()).get('/api/v1/schedules').expect(200)).body.data).toEqual(before);
+  });
+  it('clears an ending atomically and permits moving the due date beyond the former limit', async () => {
+    await control(false, '2026-03-31');
+    const { id: _id, ...fields } = template;
+    await request(app())
+      .put(`/api/v1/recurring/${recurringId}`)
+      .send({ ...fields, date: '2026-06-01', endDate: null })
+      .expect(200);
+    expect((await request(app()).get('/api/v1/schedules').expect(200)).body.data.scheduleSettings).toEqual([
+      { recurringId, isPaused: false, endDate: null },
+    ]);
   });
 });

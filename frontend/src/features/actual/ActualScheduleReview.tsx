@@ -1,5 +1,6 @@
 import type { ActualFile } from './actualSchema';
 import { ACTUAL } from './actual.constants';
+import { editorOccurrences } from '../transactions/editorOccurrences';
 import { money } from '../../utils/format';
 /** Show the exact new schedules, estimates and controls before the user commits.
  * @param {object} props - Reviewed additions and source catalog. @returns {JSX.Element | null} Schedule review. */
@@ -19,7 +20,7 @@ export function ActualScheduleReview({ rows, file }: { rows: ActualFile['recurri
           <li key={row.id}>
             <strong>{row.name}</strong> · {money(row.amount)} · {row.type} · {row.frequency}
             <p>
-              From {row.date} · {file.accounts.find((account) => account.id === row.accountId)?.name}
+              Anchor {row.date} · {file.accounts.find((account) => account.id === row.accountId)?.name}
               {row.destinationAccountId &&
                 ` → ${file.accounts.find((account) => account.id === row.destinationAccountId)?.name}`}
               {' · '}
@@ -28,6 +29,7 @@ export function ActualScheduleReview({ rows, file }: { rows: ActualFile['recurri
             {file.scheduleSettings.find((setting) => setting.recurringId === row.id)?.endDate && (
               <p>Ends {file.scheduleSettings.find((setting) => setting.recurringId === row.id)?.endDate}</p>
             )}
+            <p>Next due: {editorOccurrences({ ...file, budgets: [] }, row)[0]?.date ?? 'No pending dates'}</p>
             {row.notes && <p className="actual-schedule-notes">{row.notes}</p>}
           </li>
         ))}

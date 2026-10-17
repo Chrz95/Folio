@@ -1,33 +1,19 @@
-import { Plus, Repeat2, Bell } from 'lucide-react';
+import { Plus, Repeat2 } from 'lucide-react';
+import { useState } from 'react';
 import { useWorkspace } from '../app/WorkspaceContext';
 import { RecurringCard } from '../features/transactions/RecurringCard';
-import { money, dateKey } from '../utils/format';
-import { VALUE } from '../constants/app.constants';
-const WEEKS_PER_YEAR = 52;
-/** Manage recurring rules independently of posted financial history.
+import { useToday } from '../hooks/useToday';
+import { RecurringSummary } from '../features/recurring/RecurringSummary';
+import { RecurringTable } from '../features/recurring/RecurringTable';
+import { recurringRows, sortRecurringRows } from '../features/recurring/recurringRows';
+/** Manage recurring rules in a default table sorted by the nearest unconfirmed date.
  * @returns {JSX.Element} Schedule management route. */
 export default function RecurringPage() {
   const { data, setEditor } = useWorkspace();
-  const activeExpenses = data.recurring.filter((entry) => {
-    const settings = data.scheduleSettings?.find((control) => control.recurringId === entry.id);
-    return (
-      entry.type === 'expense' &&
-      entry.frequency !== 'once' &&
-      !settings?.isPaused &&
-      (!settings?.endDate || settings.endDate >= dateKey())
-    );
-  });
-  const monthly = activeExpenses.reduce(
-    (total, entry) =>
-      total +
-      entry.amount *
-        (entry.frequency === 'yearly'
-          ? 1 / VALUE.monthCount
-          : entry.frequency === 'weekly'
-            ? WEEKS_PER_YEAR / VALUE.monthCount
-            : 1),
-    0,
-  );
+  const [view, setView] = useState<'table' | 'cards'>('table');
+  const today = useToday();
+  const rows = recurringRows(data, today);
+  const ordered = sortRecurringRows(rows, today, 'proximity', 'ascending');
   return (
     <div className="page-content">
       <div className="page-title-row">
@@ -42,36 +28,47 @@ export default function RecurringPage() {
           className="button primary"
           onClick={() => setEditor({ isRecurring: true })}
         >
-          <Plus size={17} />
-          Add recurring
+          <Plus size={17} /> Add recurring
         </button>
       </div>
-      <div className="recurring-banner">
-        <span className="recurring-banner-icon">
-          <Repeat2 size={24} />
-        </span>
-        <div>
-          <span>Active recurring expense rate</span>
-          <strong>{money(Math.round(monthly))}</strong>
-        </div>
-        <p>
-          Across {activeExpenses.length} recurring expenses.
-          <br />
-          Normalized monthly rate. Individual skips are reflected in forecasts.
-        </p>
-        <Bell
-          size={28}
-          className="banner-bell"
+      <RecurringSummary />
+      <div className="recurring-view-toolbar">
+        <p>Default order: closest unconfirmed date. Overdue dates win ties.</p>
+        <fieldset
+          className="recurring-view-toggle"
+          aria-label="Recurring view"
+        >
+          <button
+            className="button secondary"
+            aria-pressed={view === 'table'}
+            onClick={() => setView('table')}
+          >
+            Table
+          </button>
+          <button
+            className="button secondary"
+            aria-pressed={view === 'cards'}
+            onClick={() => setView('cards')}
+          >
+            Cards
+          </button>
+        </fieldset>
+      </div>
+      {view === 'table' ? (
+        <RecurringTable
+          rows={rows}
+          today={today}
         />
-      </div>
-      <div className="recurring-grid">
-        {data.recurring.map((template) => (
-          <RecurringCard
-            key={template.id}
-            template={template}
-          />
-        ))}
-      </div>
+      ) : (
+        <div className="recurring-grid">
+          {ordered.map((row) => (
+            <RecurringCard
+              key={row.template.id}
+              row={row}
+            />
+          ))}
+        </div>
+      )}
       {!data.recurring.length && (
         <section className="panel empty-state">
           <Repeat2 size={32} />

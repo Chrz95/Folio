@@ -1,7 +1,8 @@
 import { OccurrenceActions } from '../schedules/OccurrenceActions';
 import { Plus, Check, Clock3 } from 'lucide-react';
 import { useWorkspace } from '../../app/WorkspaceContext';
-import { getOccurrences } from '../transactions/recurrence';
+import { calendarEntries, PAYMENT_LABEL } from './calendarEntries';
+import { useToday } from '../../hooks/useToday';
 import { formatDate, money } from '../../utils/format';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
 interface DayDetailProps {
@@ -13,8 +14,9 @@ interface DayDetailProps {
  * @returns {JSX.Element} Day agenda. */
 export function DayDetail({ date }: DayDetailProps) {
   const { data, setEditor } = useWorkspace();
+  const today = useToday();
   const actual = data.transactions.filter((entry) => entry.date === date);
-  const planned = getOccurrences(data, date, date).filter((entry) => !entry.isPaid);
+  const planned = calendarEntries(data, date, date, today).filter((row) => row.isPlanned);
   return (
     <section className="panel day-detail">
       <div className="panel-heading">
@@ -32,7 +34,7 @@ export function DayDetail({ date }: DayDetailProps) {
       </div>
       {actual.map((entry) => (
         <button
-          className="agenda-item"
+          className="agenda-item confirmed"
           key={entry.id}
           onClick={() => setEditor({ isRecurring: false, transaction: entry })}
         >
@@ -41,26 +43,30 @@ export function DayDetail({ date }: DayDetailProps) {
             <strong>{entry.name}</strong>
             <small>
               <Check size={12} />
-              Recorded
+              Confirmed
             </small>
           </span>
           <b className={entry.type === 'income' ? 'positive' : ''}>{money(entry.amount)}</b>
         </button>
       ))}
-      {planned.map((entry) => (
+      {planned.map(({ entry, status, key, isPaused }) => (
         <div
-          className="agenda-item planned-item"
-          key={entry.occurrenceId}
+          className={`agenda-item planned-item ${status}`}
+          key={key}
         >
           <CategoryIcon category={entry.category} />
           <span>
             <strong>{entry.name}</strong>
             <small>
               <Clock3 size={12} />
-              Planned · {money(entry.amount)}
+              {PAYMENT_LABEL[status]}
+              {isPaused ? ' · Paused' : ''} · {money(entry.amount)}
             </small>
           </span>
-          <OccurrenceActions occurrence={entry} />
+          <OccurrenceActions
+            occurrence={entry}
+            isPaused={isPaused}
+          />
         </div>
       ))}
       {!actual.length && !planned.length && (

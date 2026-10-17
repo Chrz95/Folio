@@ -92,13 +92,22 @@ export function createBudgetRepository(client: DatabaseClient) {
     getRecurring: (id: string) => database.select().from(recurring).where(eq(recurring.id, id)).get(),
     /** Persist a schedule without affecting actual account balances.
      * @param {typeof recurring.$inferInsert} value - Typed boundary input.
+     * @param {string | null} endDate - Optional inclusive ending saved atomically.
      * @returns {object} Operation result. */
-    addRecurring: (value: typeof recurring.$inferInsert) => database.insert(recurring).values(value).returning().get(),
+    addRecurring: (value: typeof recurring.$inferInsert, endDate?: string | null) =>
+      database.transaction(() => {
+        const row = database.insert(recurring).values(value).returning().get();
+        if (endDate !== undefined) {
+          database.insert(scheduleSettings).values({ recurringId: value.id, isPaused: false, endDate }).run();
+        }
+        return row;
+      }),
     /** Change future schedule rules without rewriting actual history.
      * @param {string} id - Stable resource identifier.
      * @param {Partial<typeof recurring.$inferInsert>} value - Typed boundary input.
+     * @param {string | null} endDate - Optional inclusive ending; pause state is retained.
      * @returns {object} Operation result. */
-    updateRecurring: (id: string, value: Partial<typeof recurring.$inferInsert>) =>
+    updateRecurring: (id: string, value: Partial<typeof recurring.$inferInsert>, endDate?: string | null) =>
       database.transaction(() => {
         const previous = database.select().from(recurring).where(eq(recurring.id, id)).get();
         const updated = database.update(recurring).set(value).where(eq(recurring.id, id)).returning().get();
@@ -108,6 +117,13 @@ export function createBudgetRepository(client: DatabaseClient) {
             (value.frequency !== undefined && value.frequency !== previous.frequency))
         ) {
           database.delete(skippedOccurrences).where(eq(skippedOccurrences.recurringId, id)).run();
+        }
+        if (updated && endDate !== undefined) {
+          database
+            .insert(scheduleSettings)
+            .values({ recurringId: id, isPaused: false, endDate })
+            .onConflictDoUpdate({ target: scheduleSettings.recurringId, set: { endDate } })
+            .run();
         }
         return updated;
       }),

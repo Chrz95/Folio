@@ -68,11 +68,11 @@ export async function runReminderScan(
           JSON.stringify({ title: currentJob.title, body: currentJob.body, tag: currentJob.key }),
           { TTL: REMINDERS.pushTtl, timeout: REMINDERS.pushTimeout },
         );
-        if (!isStopped()) {
+        if (!isStopped() && subscriptions.exists(subscription.endpoint)) {
           state.recordAttempt({ ...record, status: 'sent' });
         }
       } catch (error) {
-        if (isStopped()) {
+        if (isStopped() || !subscriptions.exists(subscription.endpoint)) {
           return;
         }
         const status = error instanceof webpush.WebPushError ? error.statusCode : 0;

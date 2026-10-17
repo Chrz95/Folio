@@ -1,3 +1,4 @@
+import { resolveScheduleEnding } from './scheduleEnding.js';
 import { isScheduleDateEnabled } from '../schedules/schedulePolicy.js';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../lib/errors/AppError.js';
@@ -13,6 +14,15 @@ function requireResource<T>(resource: T | undefined): T {
     throw new AppError(HTTP.notFound, 'NOT_FOUND', 'This item no longer exists.');
   }
   return resource;
+}
+/** Validate counted or explicit endings at the service boundary without leaking implementation errors.
+ * @param {RecurringInput} input - Validated mutation. @returns {string | null | undefined} Inclusive end. */
+function readEnding(input: RecurringInput) {
+  try {
+    return resolveScheduleEnding(input);
+  } catch (error) {
+    throw new AppError(HTTP.badRequest, 'INVALID_END_DATE', error instanceof Error ? error.message : 'Invalid ending.');
+  }
 }
 /** Keep schedule posting rules separate from HTTP and persistence.
  * @param {BudgetRepository} repository - Persistence boundary.
@@ -67,7 +77,9 @@ export function createBudgetService(repository: BudgetRepository) {
      * @returns {object} Operation result. */
     createRecurring: (input: RecurringInput) => {
       repository.validateCategory(input.category);
-      return repository.addRecurring({ ...input, id: randomUUID() });
+      const ending = readEnding(input);
+      const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
+      return repository.addRecurring({ ...fields, id: randomUUID() }, ending);
     },
     /** Change future schedule rules without rewriting actual history.
      * @param {string} id - Stable resource identifier.
@@ -75,7 +87,11 @@ export function createBudgetService(repository: BudgetRepository) {
      * @returns {object} Operation result. */
     updateRecurring: (id: string, input: RecurringInput) => {
       repository.validateCategory(input.category, repository.getRecurring(id)?.category);
-      const endDate = repository.scheduleState().scheduleSettings.find((entry) => entry.recurringId === id)?.endDate;
+      const requestedEnd = readEnding(input);
+      const endDate =
+        requestedEnd === undefined
+          ? repository.scheduleState().scheduleSettings.find((entry) => entry.recurringId === id)?.endDate
+          : requestedEnd;
       if (endDate && input.date > endDate) {
         throw new AppError(
           HTTP.badRequest,
@@ -83,7 +99,8 @@ export function createBudgetService(repository: BudgetRepository) {
           'Adjust the end date before moving the schedule start.',
         );
       }
-      return requireResource(repository.updateRecurring(id, input));
+      const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
+      return requireResource(repository.updateRecurring(id, fields, requestedEnd));
     },
     /** Remove a schedule while preserving its posted transactions.
      * @param {string} id - Stable resource identifier.

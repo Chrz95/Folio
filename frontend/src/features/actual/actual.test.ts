@@ -51,7 +51,7 @@ describe('native Actual exports and additive conversion', () => {
       expect(plan.accountRows.map((row) => row.source)).toEqual([6200, 2000]);
       expect(plan.accountRows.every((row) => row.source === row.after)).toBe(true);
       expect(plan.added.monthlyBudgets).toBe(1);
-      expect(Object.values(actualPlan(mergeActual(empty, plan.rows), file).added)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+      expect(Object.values(actualPlan(mergeActual(empty, plan.rows), file).added)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
     },
   );
   it('rejects edited source identities, preserving unrelated destination collections', () => {

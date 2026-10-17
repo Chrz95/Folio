@@ -10,6 +10,16 @@ export function createReminderRepository(client: DatabaseClient) {
     /** Read browser subscriptions for the next bounded reminder scan.
      * @returns {object[]} Operation result. */
     list: () => database.select().from(subscriptions).all(),
+    /** Check enrollment again after provider awaits so deleting data cannot recreate delivery history.
+     * @param {string} endpoint - Previously enrolled device. @returns {boolean} Still enrolled. */
+    exists: (endpoint: string) =>
+      Boolean(
+        database
+          .select({ endpoint: subscriptions.endpoint })
+          .from(subscriptions)
+          .where(eq(subscriptions.endpoint, endpoint))
+          .get(),
+      ),
     /** Atomically insert or replace a browser subscription.
      * @param {typeof subscriptions.$inferInsert} value - Typed boundary input.
      * @returns {object} Operation result. */
