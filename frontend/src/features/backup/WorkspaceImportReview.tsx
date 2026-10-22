@@ -20,7 +20,10 @@ export function WorkspaceImportReview({ state }: { state: WorkspaceImporter }) {
           </div>
         ))}
       </dl>
-      <p>All imported schedules will be paused. Resume them individually after reviewing dates and reminder timing.</p>
+      <p>
+        All imported schedules will be paused with automatic confirmation disabled. Review dates and reminder timing,
+        then resume and enable automation individually.
+      </p>
       <p>
         Device subscriptions, notification preferences, delivery history and appearance are retained. Server snoozes
         tied to the old schedules are cleared.

@@ -1,3 +1,4 @@
+import { RecurringMobileSort } from './RecurringMobileSort';
 import { useState } from 'react';
 import type { RecurringRow, RecurringSort, SortDirection } from './recurringRows';
 import { sortRecurringRows } from './recurringRows';
@@ -16,6 +17,14 @@ export function RecurringTable({ rows, today }: { rows: RecurringRow[]; today: s
   }
   return (
     <div className="panel recurring-table-scroll">
+      <RecurringMobileSort
+        sort={sort}
+        direction={direction}
+        onChange={(next, order) => {
+          setSort(next);
+          setDirection(order);
+        }}
+      />
       <table
         className="recurring-table"
         aria-label="Recurring transactions"

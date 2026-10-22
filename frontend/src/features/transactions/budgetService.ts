@@ -1,3 +1,5 @@
+import { confirmDemoOccurrences } from '../schedules/automaticConfirmation';
+import { patchDemoControls } from '../schedules/automaticControls';
 import { resolveScheduleEnding } from './scheduleEnding';
 import type { EndingInput } from './scheduleEnding';
 import { loadSchedules, mutateSchedule } from '../schedules/scheduleService';
@@ -20,7 +22,7 @@ export type Resource = 'transactions' | 'recurring' | 'accounts' | 'budgets' | P
  * @returns {Promise<BudgetData>} Workspace snapshot. */
 export async function loadBudget(signal?: AbortSignal): Promise<BudgetData> {
   if (environment.isDemo) {
-    return readDemo();
+    return confirmDemoOccurrences(Date.now());
   }
   const maximumRows = 500;
   const transactions: Transaction[] = [];
@@ -70,10 +72,16 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
   const data = readDemo();
   let storedValue = value;
   let requestedEnd: string | null | undefined;
+  let requestedAutomatic: boolean | undefined;
+  let restartAutomatic = false;
   if (resource === 'recurring' && value && method !== 'DELETE') {
-    const input = value as EndingInput;
+    const input = value as EndingInput & { autoConfirm?: boolean };
     requestedEnd = resolveScheduleEnding(input);
-    const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
+    const { endDate: _end, repetitions: _count, countFrom: _from, autoConfirm, ...fields } = input;
+    if ((autoConfirm !== undefined && typeof autoConfirm !== 'boolean') || 'autoConfirmFrom' in input) {
+      throw new Error('Choose an explicit automatic confirmation checkbox value.');
+    }
+    requestedAutomatic = autoConfirm;
     storedValue = fields;
   }
   if ((resource === 'transactions' || resource === 'recurring') && value && method !== 'DELETE') {
@@ -101,6 +109,7 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
       throw new Error('Adjust the end date before moving the schedule start.');
     }
     if (previous && (previous.date !== input.date || previous.frequency !== input.frequency)) {
+      restartAutomatic = true;
       data.skippedOccurrences = data.skippedOccurrences?.filter((entry) => entry.recurringId !== id);
     }
   }
@@ -132,12 +141,21 @@ export async function mutateBudget(resource: Resource, method: string, value?: o
         ? { createdAt: previous?.createdAt ?? Date.now(), recurringId: previous?.recurringId ?? null }
         : {};
     const record = { ...audit, ...storedValue, id: id ?? crypto.randomUUID() };
-    if (resource === 'recurring' && requestedEnd !== undefined) {
-      const previousControl = data.scheduleSettings?.find((row) => row.recurringId === record.id);
-      data.scheduleSettings = [
-        ...(data.scheduleSettings ?? []).filter((row) => row.recurringId !== record.id),
-        { recurringId: record.id, isPaused: previousControl?.isPaused ?? false, endDate: requestedEnd },
-      ];
+    if (
+      resource === 'recurring' &&
+      (requestedEnd !== undefined ||
+        requestedAutomatic !== undefined ||
+        (restartAutomatic && data.scheduleSettings?.some((row) => row.recurringId === record.id && row.autoConfirm)))
+    ) {
+      patchDemoControls(
+        data,
+        record.id,
+        {
+          ...(requestedEnd !== undefined ? { endDate: requestedEnd } : {}),
+          ...(requestedAutomatic !== undefined ? { autoConfirm: requestedAutomatic } : {}),
+        },
+        restartAutomatic,
+      );
     }
     const next = [...entries.filter((entry) => entry.id !== id), record];
     Object.assign(data, { [resource]: next });

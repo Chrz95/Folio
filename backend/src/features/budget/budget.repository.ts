@@ -1,3 +1,4 @@
+import { portableScheduleControl, patchScheduleControls } from '../schedules/scheduleControls.repository.js';
 import { scheduleSettings, skippedOccurrences } from '../../db/schema/schedules.js';
 import { requireCategory } from '../planning/categoryValidation.js';
 import { clearances } from '../../db/schema/operations.js';
@@ -12,7 +13,7 @@ export function createBudgetRepository(client: DatabaseClient) {
   return {
     /** Read controls for authoritative occurrence checks. @returns {object} Saved schedule policy. */
     scheduleState: () => ({
-      scheduleSettings: database.select().from(scheduleSettings).all(),
+      scheduleSettings: database.select().from(scheduleSettings).all().map(portableScheduleControl),
       skippedOccurrences: database.select().from(skippedOccurrences).all(),
     }),
     /** Check categories at the persistence boundary. @param {string} name - Category name.
@@ -94,11 +95,14 @@ export function createBudgetRepository(client: DatabaseClient) {
      * @param {typeof recurring.$inferInsert} value - Typed boundary input.
      * @param {string | null} endDate - Optional inclusive ending saved atomically.
      * @returns {object} Operation result. */
-    addRecurring: (value: typeof recurring.$inferInsert, endDate?: string | null) =>
+    addRecurring: (value: typeof recurring.$inferInsert, endDate?: string | null, autoConfirm?: boolean) =>
       database.transaction(() => {
         const row = database.insert(recurring).values(value).returning().get();
-        if (endDate !== undefined) {
-          database.insert(scheduleSettings).values({ recurringId: value.id, isPaused: false, endDate }).run();
+        if (endDate !== undefined || autoConfirm !== undefined) {
+          patchScheduleControls(client, value.id, {
+            ...(endDate !== undefined ? { endDate } : {}),
+            ...(autoConfirm !== undefined ? { autoConfirm } : {}),
+          });
         }
         return row;
       }),
@@ -107,7 +111,12 @@ export function createBudgetRepository(client: DatabaseClient) {
      * @param {Partial<typeof recurring.$inferInsert>} value - Typed boundary input.
      * @param {string | null} endDate - Optional inclusive ending; pause state is retained.
      * @returns {object} Operation result. */
-    updateRecurring: (id: string, value: Partial<typeof recurring.$inferInsert>, endDate?: string | null) =>
+    updateRecurring: (
+      id: string,
+      value: Partial<typeof recurring.$inferInsert>,
+      endDate?: string | null,
+      autoConfirm?: boolean,
+    ) =>
       database.transaction(() => {
         const previous = database.select().from(recurring).where(eq(recurring.id, id)).get();
         const updated = database.update(recurring).set(value).where(eq(recurring.id, id)).returning().get();
@@ -118,12 +127,22 @@ export function createBudgetRepository(client: DatabaseClient) {
         ) {
           database.delete(skippedOccurrences).where(eq(skippedOccurrences.recurringId, id)).run();
         }
-        if (updated && endDate !== undefined) {
-          database
-            .insert(scheduleSettings)
-            .values({ recurringId: id, isPaused: false, endDate })
-            .onConflictDoUpdate({ target: scheduleSettings.recurringId, set: { endDate } })
-            .run();
+        const restart = Boolean(
+          previous && updated && (previous.date !== updated.date || previous.frequency !== updated.frequency),
+        );
+        const hasAutomatic =
+          restart &&
+          database.select().from(scheduleSettings).where(eq(scheduleSettings.recurringId, id)).get()?.autoConfirm;
+        if (updated && (endDate !== undefined || autoConfirm !== undefined || hasAutomatic)) {
+          patchScheduleControls(
+            client,
+            id,
+            {
+              ...(endDate !== undefined ? { endDate } : {}),
+              ...(autoConfirm !== undefined ? { autoConfirm } : {}),
+            },
+            restart,
+          );
         }
         return updated;
       }),

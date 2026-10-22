@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { scheduleSettingsSchema } from '../schedules/schedule.schema.js';
+import { portableScheduleSettingsSchema as scheduleSettingsSchema } from '../schedules/schedule.schema.js';
 import { BUDGET_LIMITS } from '../budget/budget.constants.js';
 import { receiptInputSchema } from '../receipts/receiptValidation.js';
 import { BACKUP } from './backup.constants.js';

@@ -62,6 +62,9 @@ export function RecurringCard({ row }: RecurringCardProps) {
           isPaused={isPaused}
         />
       </div>
+      {data.scheduleSettings?.some((control) => control.recurringId === template.id && control.autoConfirm) && (
+        <p className="field-hint">Automatic confirmation{isPaused ? ' · paused' : ''}</p>
+      )}
       <ScheduleControls template={template} />
     </article>
   );

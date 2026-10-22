@@ -1,0 +1,216 @@
+.mobile-recurring-sort {
+  display: none;
+}
+.inline-category {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.inline-category-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.category-field {
+  min-width: 0;
+}
+.category-field > .text-button {
+  margin-top: 6px;
+}
+.automatic-confirmation-field {
+  margin-top: 14px;
+}
+.automatic-confirmation-field small {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+@media (max-width: 900px) {
+  .mobile-recurring-sort {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .recurring-table-scroll {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .recurring-table {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .recurring-table thead {
+    display: none;
+  }
+  .recurring-table caption {
+    display: block;
+    padding: 0 0 14px;
+  }
+  .recurring-table tbody {
+    display: grid;
+    gap: 14px;
+  }
+  .recurring-table tr {
+    display: block;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .recurring-table th[scope='row'] {
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 16px;
+  }
+  .recurring-table td {
+    position: relative;
+    display: block;
+    padding: 12px 16px 12px 46%;
+    min-height: 44px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .recurring-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    width: 38%;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .recurring-table td:last-child {
+    padding: 14px 16px;
+    border-bottom: 0;
+  }
+  .recurring-table td:last-child::before {
+    position: static;
+    display: block;
+    margin-bottom: 10px;
+  }
+  .recurring-row-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .recurring-table .schedule-controls {
+    width: 100%;
+  }
+  .recurring-table .schedule-action {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+  }
+}
+@media (max-width: 599px) {
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+  }
+  .main-nav a {
+    min-width: 0;
+    padding-inline: 3px;
+  }
+  .main-nav a span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .editor-header > div {
+    min-width: 0;
+  }
+  .editor-header > .icon-button {
+    flex-shrink: 0;
+  }
+  .main-shell,
+  .page-content,
+  .panel,
+  .settings-panel,
+  .recurring-banner > * {
+    min-width: 0;
+  }
+  .page-title-row > div,
+  .page-title-row > .button,
+  .settings-actions > .button {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .page-title-row > .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .page-title-row h1 {
+    font-size: clamp(1.6rem, 7vw, 2rem);
+    overflow-wrap: anywhere;
+  }
+  .recurring-banner {
+    gap: 14px;
+    padding: 18px;
+  }
+  .recurring-banner p {
+    flex: 1 1 100%;
+    line-height: 1.6;
+  }
+  .recurring-banner .banner-bell {
+    display: none;
+  }
+  .recurring-view-toolbar > p {
+    width: 100%;
+  }
+  .form-two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+  }
+  .editor-dialog {
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
+    max-height: calc(100dvh - 20px);
+    margin: auto;
+  }
+  .editor-header,
+  .editor-body,
+  .editor-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .editor-header h2 {
+    overflow-wrap: anywhere;
+  }
+  .settings-actions,
+  .editor-footer,
+  .transaction-support-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .inline-check {
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+  .inline-check input {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .custom-category-list > div {
+    min-width: 0;
+    gap: 12px;
+  }
+  .custom-category-list span {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+}

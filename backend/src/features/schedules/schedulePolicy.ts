@@ -2,6 +2,8 @@ export interface ScheduleSettings {
   recurringId: string;
   isPaused: boolean;
   endDate: string | null;
+  autoConfirm?: boolean;
+  autoConfirmFrom?: string | null;
 }
 export interface SkippedOccurrence {
   recurringId: string;

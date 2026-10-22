@@ -20,9 +20,14 @@ export function RecurringTableRow({ row, today }: { row: RecurringRow; today: st
           {template.category} · {data.accounts.find((account) => account.id === template.accountId)?.name}
         </small>
       </th>
-      <td className="recurring-table-amount">{money(template.amount)}</td>
-      <td>{FREQUENCY_LABEL[template.frequency]}</td>
-      <td>
+      <td
+        data-label="Amount"
+        className="recurring-table-amount"
+      >
+        {money(template.amount)}
+      </td>
+      <td data-label="Frequency">{FREQUENCY_LABEL[template.frequency]}</td>
+      <td data-label="Closest unconfirmed">
         {closest ? (
           <time dateTime={closest.date}>
             {formatDate(closest.date, { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -32,9 +37,12 @@ export function RecurringTableRow({ row, today }: { row: RecurringRow; today: st
         )}
         {endDate && <small>Ends {formatDate(endDate, { day: 'numeric', month: 'short', year: 'numeric' })}</small>}
       </td>
-      <td>
+      <td data-label="Status">
         {status && <span className={`payment-status ${status}`}>{PAYMENT_LABEL[status]}</span>}
         {isPaused && <span className="recurring-pause">Paused</span>}
+        {data.scheduleSettings?.some((control) => control.recurringId === template.id && control.autoConfirm) && (
+          <small>Automatic confirmation{isPaused ? ' · paused' : ''}</small>
+        )}
         {!closest && !isPaused && <span>No pending dates</span>}
         {row.overdue > 0 && (
           <small>
@@ -42,7 +50,7 @@ export function RecurringTableRow({ row, today }: { row: RecurringRow; today: st
           </small>
         )}
       </td>
-      <td>
+      <td data-label="Actions">
         <RecurringRowActions row={row} />
       </td>
     </tr>

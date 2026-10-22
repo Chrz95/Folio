@@ -1,3 +1,4 @@
+import { CategoryField } from './CategoryField';
 import { MerchantNameField } from './MerchantNameField';
 import { AccountOptions } from './AccountOptions';
 import type { TransactionFormState } from './useTransactionForm';
@@ -64,25 +65,7 @@ export function TransactionFields({ form }: TransactionFieldsProps) {
             </select>
           </label>
         ) : (
-          <label>
-            Category
-            <select
-              name="category"
-              value={entry.category}
-              onChange={(event) => entry.changeCategory(event.target.value)}
-              required
-            >
-              {entry.categories.map((name) => (
-                <option
-                  key={name}
-                  value={name}
-                >
-                  {name}
-                  {entry.isArchived(name) ? ' (archived)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <CategoryField form={form} />
         )}
       </div>
     </div>

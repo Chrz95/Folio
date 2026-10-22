@@ -1,3 +1,4 @@
+import { portableScheduleControl } from '../schedules/scheduleControls.repository.js';
 import { scheduleSettings, skippedOccurrences } from '../../db/schema/schedules.js';
 import type { DatabaseClient } from '../../db/client.js';
 import { accounts, transactions, recurring, budgets } from '../../db/schema/budget.js';
@@ -9,7 +10,7 @@ import { receipts } from '../../db/schema/receipts.js';
 export function workspaceSnapshot(client: DatabaseClient) {
   const { database } = client;
   return database.transaction(() => ({
-    scheduleSettings: database.select().from(scheduleSettings).all(),
+    scheduleSettings: database.select().from(scheduleSettings).all().map(portableScheduleControl),
     skippedOccurrences: database.select().from(skippedOccurrences).all(),
     accounts: database.select().from(accounts).all(),
     transactions: database.select().from(transactions).all(),

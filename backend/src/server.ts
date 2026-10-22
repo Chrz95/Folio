@@ -1,3 +1,4 @@
+import { startAutomaticWorker } from './features/schedules/automatic.worker.js';
 import { loadEnvironment } from './app/config/environment.js';
 import { createLogger } from './lib/logger/logger.js';
 import { openDatabase, verifySchema } from './db/client.js';
@@ -17,6 +18,7 @@ try {
 }
 const app = createApp(client, configuration, logger);
 const server = app.listen(configuration.port, configuration.host, () => logger.info('Folio API listening'));
+const stopAutomatic = startAutomaticWorker(client, logger);
 const stopReminders = startReminderWorker(client, configuration.push, logger);
 let isShuttingDown = false;
 /** Stop accepting requests, finish active work, and close SQLite.
@@ -27,6 +29,7 @@ function shutdown(exitCode: number) {
     return;
   }
   isShuttingDown = true;
+  stopAutomatic();
   stopReminders();
   const timeout = setTimeout(() => {
     logger.fatal('Shutdown deadline exceeded');

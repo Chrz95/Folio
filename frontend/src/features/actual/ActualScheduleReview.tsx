@@ -14,7 +14,10 @@ export function ActualScheduleReview({ rows, file }: { rows: ActualFile['recurri
       open
     >
       <summary>{rows.length} recurring transactions to add · all paused</summary>
-      <p>Check amounts and dates here. After import, open Recurring to edit and resume each schedule.</p>
+      <p>
+        Check amounts and dates here. Imported schedules have automatic confirmation disabled. After import, open
+        Recurring to edit and resume each schedule.
+      </p>
       <ul>
         {rows.slice(0, ACTUAL.previewRows).map((row) => (
           <li key={row.id}>

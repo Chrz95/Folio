@@ -17,6 +17,10 @@ export function useTransactionForm(editor: EditorState) {
   const original = editor.isDuplicate ? undefined : defaults;
   const [type, setType] = useState<TransactionType>(defaults?.type ?? 'expense');
   const [isRecurring, setRecurring] = useState(editor.isRecurring);
+  const [autoConfirm, setAutoConfirm] = useState(
+    (!editor.isDuplicate && data.scheduleSettings?.find((row) => row.recurringId === original?.id)?.autoConfirm) ||
+      false,
+  );
   const [frequency, setFrequency] = useState<Frequency>(
     original && 'frequency' in original ? original.frequency : 'monthly',
   );
@@ -84,7 +88,7 @@ export function useTransactionForm(editor: EditorState) {
       destinationAccountId,
       date: shouldSchedule ? scheduleDate : String(fields.get('date')),
       notes: String(fields.get('notes')).trim(),
-      ...(isRecurring ? ending.request : {}),
+      ...(isRecurring ? { ...ending.request, autoConfirm } : {}),
       ...(shouldSchedule
         ? {
             frequency: isPlannedOneTime ? 'once' : frequency,
@@ -128,6 +132,8 @@ export function useTransactionForm(editor: EditorState) {
     entry,
     isRecurring,
     setRecurring,
+    autoConfirm,
+    setAutoConfirm,
     frequency,
     setFrequency: changeFrequency,
     ending,

@@ -1,3 +1,4 @@
+import { portableScheduleControl } from '../schedules/scheduleControls.repository.js';
 import type { DatabaseClient } from '../../db/client.js';
 import { accounts, transactions, recurring } from '../../db/schema/budget.js';
 import { monthlyBudgets, customCategories } from '../../db/schema/planning.js';
@@ -21,7 +22,7 @@ export function createActualRepository(client: DatabaseClient) {
         .from(customCategories)
         .all(),
       clearances: database.select().from(clearances).all(),
-      scheduleSettings: database.select().from(scheduleSettings).all(),
+      scheduleSettings: database.select().from(scheduleSettings).all().map(portableScheduleControl),
       skippedOccurrences: database.select().from(skippedOccurrences).all(),
     }),
     /** Insert in foreign-key order; the caller's transaction covers every row.

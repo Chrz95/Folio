@@ -10,8 +10,14 @@ export const scheduleSettings = sqliteTable(
       .references(() => recurring.id, { onDelete: 'cascade' }),
     isPaused: integer('is_paused', { mode: 'boolean' }).notNull(),
     endDate: text('end_date'),
+    autoConfirm: integer('auto_confirm', { mode: 'boolean' }).notNull().default(false),
+    autoConfirmFrom: text('auto_confirm_from'),
   },
-  (table) => [check('schedule_pause_boolean', sql`${table.isPaused} in (0,1)`)],
+  (table) => [
+    check('schedule_pause_boolean', sql`${table.isPaused} in (0,1)`),
+    check('schedule_auto_boolean', sql`${table.autoConfirm} in (0,1)`),
+    check('schedule_auto_start', sql`${table.autoConfirm} = 0 or ${table.autoConfirmFrom} is not null`),
+  ],
 );
 export const skippedOccurrences = sqliteTable(
   'skipped_occurrences',

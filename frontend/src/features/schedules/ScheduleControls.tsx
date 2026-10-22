@@ -19,7 +19,7 @@ export function ScheduleControls({ template }: ControlsProps) {
     <details className="schedule-controls">
       <summary>Schedule controls · {skipped.length} skipped</summary>
       <ScheduleSettingsForm
-        key={`${settings?.isPaused}:${settings?.endDate}`}
+        key={`${settings?.isPaused}:${settings?.endDate}:${settings?.autoConfirm}`}
         template={template}
         settings={settings}
       />

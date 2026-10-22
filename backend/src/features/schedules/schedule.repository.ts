@@ -1,3 +1,4 @@
+import { portableScheduleControl, patchScheduleControls } from './scheduleControls.repository.js';
 import { and, eq } from 'drizzle-orm';
 import type { DatabaseClient } from '../../db/client.js';
 import { scheduleSettings, skippedOccurrences } from '../../db/schema/schedules.js';
@@ -12,18 +13,15 @@ export function createScheduleRepository(client: DatabaseClient) {
     hasOccurrence: budget.hasOccurrence,
     /** Read all small control collections. @returns {object} Optional planning metadata. */
     state: () => ({
-      scheduleSettings: database.select().from(scheduleSettings).all(),
+      scheduleSettings: database.select().from(scheduleSettings).all().map(portableScheduleControl),
       skippedOccurrences: database.select().from(skippedOccurrences).all(),
     }),
     /** Save a complete control record. @param {typeof scheduleSettings.$inferInsert} value - Controls.
      * @returns {object} Durable control. */
-    saveSettings: (value: typeof scheduleSettings.$inferInsert) =>
-      database
-        .insert(scheduleSettings)
-        .values(value)
-        .onConflictDoUpdate({ target: scheduleSettings.recurringId, set: value })
-        .returning()
-        .get(),
+    saveSettings: (value: typeof scheduleSettings.$inferInsert) => {
+      const { recurringId, autoConfirmFrom: _from, ...changes } = value;
+      return patchScheduleControls(client, recurringId, changes);
+    },
     /** Add one skipped date idempotently. @param {typeof skippedOccurrences.$inferInsert} value - Occurrence.
      * @returns {void} Persistent skip. */
     skip: (value: typeof skippedOccurrences.$inferInsert) => {

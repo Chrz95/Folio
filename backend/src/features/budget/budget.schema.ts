@@ -26,6 +26,7 @@ export const transactionSchema = baseTransaction
   .refine(isTransferValid, 'Choose a distinct destination account.');
 export const recurringSchema = baseTransaction
   .extend({
+    autoConfirm: z.boolean().optional(),
     frequency: z.enum(['once', 'weekly', 'monthly', 'yearly']),
     endDate: z.iso.date().nullable().optional(),
     repetitions: z.number().int().min(1).max(SCHEDULE_ENDING.maximum).optional(),

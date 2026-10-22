@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useWorkspaceRefresh } from '../hooks/useWorkspaceRefresh';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadBudget, mutateBudget, payOccurrence } from '../features/transactions/budgetService';
 import type { Resource } from '../features/transactions/budgetService';
 import type { BudgetData, RecurringTransaction } from '../types/budget';
@@ -11,15 +12,26 @@ export function useBudgetWorkspace() {
   const [isSaving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const latestLoad = useRef(0);
   /** Refresh the workspace after a durable change.
    * @returns {Promise<void>} Latest server or explicit preview snapshot. */
   const reload = useCallback(async () => {
-    setData(await loadBudget());
+    const ticket = ++latestLoad.current;
+    const current = await loadBudget();
+    if (ticket === latestLoad.current) {
+      setData(current);
+    }
   }, []);
+  useWorkspaceRefresh(reload, isSaving, setError);
   useEffect(() => {
     const controller = new AbortController();
+    const ticket = ++latestLoad.current;
     loadBudget(controller.signal)
-      .then(setData)
+      .then((current) => {
+        if (ticket === latestLoad.current) {
+          setData(current);
+        }
+      })
       .catch((failure: Error) => {
         if (!controller.signal.aborted) {
           setError(failure.message);

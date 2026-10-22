@@ -1,3 +1,4 @@
+import { AutomaticConfirmationField } from './AutomaticConfirmationField';
 import { ScheduleEndingFields } from './ScheduleEndingFields';
 import { VALUE } from '../../constants/app.constants';
 import { Repeat2 } from 'lucide-react';
@@ -59,8 +60,11 @@ export function RecurrenceFields({ form }: RecurrenceFieldsProps) {
         </div>
       )}
       <ScheduleEndingFields form={form} />
+      <AutomaticConfirmationField form={form} />
       {isRecurring && (
-        <p className="field-hint">Scheduled payments appear in your calendar. Mark each one paid when it happens.</p>
+        <p className="field-hint">
+          Scheduled payments appear in your calendar. Confirm them manually or opt in to automatic confirmation.
+        </p>
       )}
     </div>
   );

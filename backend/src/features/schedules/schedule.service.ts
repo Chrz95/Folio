@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import type { ScheduleRepository } from './schedule.repository.js';
-import type { scheduleSettingsSchema, skipOccurrenceSchema } from './schedule.schema.js';
+import type { scheduleSettingsInputSchema, skipOccurrenceSchema } from './schedule.schema.js';
 import { isOccurrence } from '../budget/recurrence.js';
 import { AppError } from '../../lib/errors/AppError.js';
 import { HTTP } from '../../constants/http.constants.js';
@@ -17,9 +17,9 @@ export function createScheduleService(repository: ScheduleRepository) {
   }
   return {
     state: repository.state,
-    /** Pause/resume and set an inclusive end date. @param {z.infer<typeof scheduleSettingsSchema>} input - Controls.
+    /** Pause/resume and set an inclusive end date. @param {z.infer<typeof scheduleSettingsInputSchema>} input - Controls.
      * @returns {object} Persisted settings. */
-    saveSettings: (input: z.infer<typeof scheduleSettingsSchema>) =>
+    saveSettings: (input: z.infer<typeof scheduleSettingsInputSchema>) =>
       repository.atomic(() => {
         const template = requireTemplate(input.recurringId);
         if (input.endDate && input.endDate < template.date) {

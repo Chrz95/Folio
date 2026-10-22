@@ -3,6 +3,34 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.15 verification
+
+386 tests in forty-seven files pass. Production frontend/backend compilation, worker/WASM/service-worker artifacts,
+strict frontend/backend/worker types, zero-warning lint, JSDoc inspection, formatting and changed component bounds pass.
+The migrate and db:check CLIs ran on a new disposable file: SQLite 3.53.4, foreign keys enabled, WAL, FULL durability
+and a 5,000 ms busy timeout. The production bundle is verified to use the API adapter and contains the new worker
+and migration in backend artifacts.
+
+Automatic-confirmation SQLite tests cover manual defaults, explicit boolean
+consent, activation dates, month-end clamping, inclusive endings, skips, pauses/resumption, timezone/DST boundaries,
+expense/income/transfer fields, repeated scans/manual retries, reopening persistence and complete batch rollback.
+An independent worker test confirms startup/timer processing and cancellation without push configuration. A populated
+1.14 migration test retains balances, paid links, skipped dates, pauses and endings; new SQL constraints and repeat
+migration are checked. The generated table-copy SQL was corrected to initialize new fields explicitly rather than
+reading columns absent from the old table. Only the new, unpublished migration was changed.
+
+Browser interaction tests cover inline category creation/selection without submitting the surrounding form, duplicate
+and quota errors, draft preservation, cancellation, manual-default and saved automatic checkboxes, exactly-once due
+posting, existing mobile sort choices/cell labels, failed automatic localStorage writes and pause behavior. A delayed
+refresh test prevents older reads replacing newer data. Enabled controls export with an activation date; imported
+schedules are paused with automatic confirmation disabled. All prior ledger, import, delete, reminder and count tests pass.
+
+The managed preview command and status both report an unavailable supervisor mailbox at /tmp/sites-previewd/requests.
+No preview server was substituted, so mobile screenshots, viewport overflow and visual/device accessibility remain
+unverified. Docker configuration/build/up/down, image sizes/non-root contents/health/proxy/graceful shutdown/volume
+replacement, ARM64 native loading and real-device notifications were not executed: Docker is unavailable here.
+The exact supplied Dockerfile is retained. No dependency or lint-configuration change is introduced.
+
 ## Version 1.14.1 verification
 
 372 tests in forty-three files pass, including all prior import, ledger, reminder and counted-schedule checks.

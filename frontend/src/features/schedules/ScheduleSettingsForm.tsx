@@ -12,13 +12,19 @@ interface SettingsProps {
 export function ScheduleSettingsForm({ template, settings }: SettingsProps) {
   const { save, isSaving } = useWorkspace();
   const [isPaused, setPaused] = useState(settings?.isPaused ?? false);
+  const [autoConfirm, setAutoConfirm] = useState(settings?.autoConfirm ?? false);
   const [endDate, setEndDate] = useState(settings?.endDate ?? '');
   return (
     <form
       className="planning-form"
       onSubmit={(event) => {
         event.preventDefault();
-        void save('scheduleSettings', 'PUT', { recurringId: template.id, isPaused, endDate: endDate || null });
+        void save('scheduleSettings', 'PUT', {
+          recurringId: template.id,
+          isPaused,
+          endDate: endDate || null,
+          autoConfirm,
+        });
       }}
     >
       <label className="inline-check">
@@ -31,6 +37,19 @@ export function ScheduleSettingsForm({ template, settings }: SettingsProps) {
         Pause this schedule
       </label>
       {isPaused && <small>Dates stay visible while paused. Reminders and Mark paid are disabled.</small>}
+      <label className="inline-check">
+        <input
+          type="checkbox"
+          checked={autoConfirm}
+          disabled={isSaving}
+          onChange={(event) => setAutoConfirm(event.target.checked)}
+        />
+        Confirm automatically on the due date
+      </label>
+      <small>
+        Enabling or resuming starts today; older overdue dates stay manual. Paused, skipped and ended dates are not
+        confirmed.
+      </small>
       <label>
         Last allowed payment date
         <input

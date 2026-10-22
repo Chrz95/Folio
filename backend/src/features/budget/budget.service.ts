@@ -78,8 +78,8 @@ export function createBudgetService(repository: BudgetRepository) {
     createRecurring: (input: RecurringInput) => {
       repository.validateCategory(input.category);
       const ending = readEnding(input);
-      const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
-      return repository.addRecurring({ ...fields, id: randomUUID() }, ending);
+      const { endDate: _end, repetitions: _count, countFrom: _from, autoConfirm, ...fields } = input;
+      return repository.addRecurring({ ...fields, id: randomUUID() }, ending, autoConfirm);
     },
     /** Change future schedule rules without rewriting actual history.
      * @param {string} id - Stable resource identifier.
@@ -99,8 +99,8 @@ export function createBudgetService(repository: BudgetRepository) {
           'Adjust the end date before moving the schedule start.',
         );
       }
-      const { endDate: _end, repetitions: _count, countFrom: _from, ...fields } = input;
-      return requireResource(repository.updateRecurring(id, fields, requestedEnd));
+      const { endDate: _end, repetitions: _count, countFrom: _from, autoConfirm, ...fields } = input;
+      return requireResource(repository.updateRecurring(id, fields, requestedEnd, autoConfirm));
     },
     /** Remove a schedule while preserving its posted transactions.
      * @param {string} id - Stable resource identifier.

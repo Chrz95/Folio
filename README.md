@@ -4,6 +4,39 @@ A calm, manual budget manager for everyday finances. Track income, expenses and 
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
 
+## Version 1.15: mobile layouts, automatic confirmation and custom spending categories
+
+The Recurring table becomes labelled vertical rows on screens up to 900px wide. Amount, frequency, next date,
+status and all actions remain visible; the mobile sort selector retains all desktop sort choices. Phone navigation,
+headers, dialogs, form columns and long category names fit narrow screens. The desktop table and optional Cards
+view remain available.
+
+In **Add/Edit recurring transaction**, enable **Confirm automatically on the due date**. The same checkbox is also
+in **Schedule controls**. It is off by default. The running backend checks once at startup and every minute,
+independently of notification permission or VAPID configuration, including when all browsers are closed. Confirmed
+occurrences become ordinary recorded transactions and use the same idempotent payment path as manual confirmation.
+This records a ledger entry; it does not charge an account or connect to a bank.
+
+Automatic confirmation begins on the date of activation in **Settings → reminders → Time zone** (default:
+Europe/Athens). It catches up missed due dates from that date after downtime, respecting the original month-end/leap
+anchor, skipped dates and inclusive ending. Dates older than activation remain manual. Paused schedules never post;
+resuming or changing the recurrence pattern restarts automatic eligibility today. Switching it off leaves recorded
+history intact. Visible workspaces refresh each minute and on return to the foreground. The browser-only preview
+processes dates while open and catches up on reopening; it cannot run in the background while closed.
+
+For custom payment types represented as **spending categories**, open the transaction editor and choose
+**Category → + Add category**. Create a name, and it is saved and selected without losing the transaction draft.
+Names are available for one-time and recurring entries, budgets and reports. Existing **Settings → Categories that
+fit your life** still supports adding, archiving and restoring categories. Duplicate names and failed writes leave
+the editor open. Creating a category saves it independently, even if you later cancel the transaction.
+
+**Upgrade:** build/push frontend, backend and migrate images tagged **1.15.0**. Stop the previous backend, retain the
+same Compose project/SQLite volume, take a consistent backup and run the updated migrate image before starting the
+new backend. Migration `0005_round_callisto` adds guarded automatic-confirmation controls with manual defaults,
+retaining existing pause, ending, skipped and paid state. The supplied Dockerfile and host ports 8081/5001 are unchanged.
+Actual and Folio replacement imports disable automation and pause schedules for review; JSON exports include enabled
+settings. No new dependency is introduced. Visual browser/device and Docker/ARM64 checks remain unverified.
+
 ## Version 1.14.1: local HTTP deletion and paused schedules
 
 Delete-all now works when the browser does not expose `crypto.subtle`, including LAN HTTP deployments. The same
@@ -264,8 +297,8 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.14.1 \
-    -t "192.168.1.11:5000/folio-${target}:1.14.1" \
+    --build-arg VERSION=1.15.0 \
+    -t "192.168.1.11:5000/folio-${target}:1.15.0" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```
@@ -276,7 +309,7 @@ On the Pi, if keys have not already been configured, generate a new private file
 ```bash
 docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
   --volume "$PWD:/keys" \
-  192.168.1.11:5000/folio-backend:1.14.1 \
+  192.168.1.11:5000/folio-backend:1.15.0 \
   backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
 ```
 

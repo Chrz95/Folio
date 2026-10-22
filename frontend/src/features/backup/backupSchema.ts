@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { scheduleSettingsSchema } from '../schedules/scheduleValidation';
+import { portableScheduleSettingsSchema as scheduleSettingsSchema } from '../schedules/scheduleValidation';
 import { VALUE } from '../../constants/app.constants';
 import { receiptInputSchema } from '../receipts/receiptValidation';
 import { BACKUP } from './backup.constants';

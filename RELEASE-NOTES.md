@@ -1,3 +1,18 @@
+# Folio 1.15
+
+- **Mobile:** labelled recurring table rows and a compact sort selector keep dates, amounts and actions available.
+  Narrow navigation, dialogs, forms, headers and category names receive responsive layouts and touch targets.
+- **Automatic confirmation:** opt-in checkbox in Add/Edit recurring and Schedule controls. A backend worker records
+  due instances each minute with manual-payment idempotency, even with browsers closed and push disabled. Activation,
+  resumption and recurrence changes start eligibility today; earlier overdue dates remain manual. Pauses, skips and
+  endings are respected. Missed dates since activation catch up after downtime. The demo runs while open/on reopening.
+- **Custom spending categories:** add and select a reusable category directly in the transaction editor. Failed or
+  duplicate creation preserves the draft; categories remain available in budgets and reports.
+- **Upgrade:** 1.15.0 images and migration 0005 required before backend startup. Existing schedules stay manual;
+  imports are paused with automation disabled. Supplied Dockerfile, ports and dependency versions are unchanged.
+
+386 tests in forty-seven files pass. See VALIDATION for executed checks and limits.
+
 # Folio 1.14.1
 
 - **LAN HTTP deletion:** use native SHA-256 when available and a compatible fallback when `crypto.subtle` is absent.

@@ -1,7 +1,8 @@
+import { patchDemoControls } from './automaticControls';
 import { environment } from '../../app/config/environment';
 import { request } from '../../lib/api/client';
 import { readDemo, writeDemo } from '../../lib/storage/demoStore';
-import { scheduleSettingsSchema, skipOccurrenceSchema } from './scheduleValidation';
+import { scheduleSettingsInputSchema, skipOccurrenceSchema } from './scheduleValidation';
 import { isOccurrence } from '../transactions/recurrence';
 import type { ScheduleData } from './schedulePolicy';
 export type ScheduleResource = 'scheduleSettings' | 'skippedOccurrences';
@@ -14,7 +15,7 @@ export async function loadSchedules(signal?: AbortSignal): Promise<ScheduleData>
  * @param {ScheduleResource} resource - Control collection. @param {object} value - Complete input.
  * @returns {Promise<void>} Durable metadata change. */
 export async function mutateSchedule(resource: ScheduleResource, value?: object): Promise<void> {
-  const schema = resource === 'scheduleSettings' ? scheduleSettingsSchema : skipOccurrenceSchema;
+  const schema = resource === 'scheduleSettings' ? scheduleSettingsInputSchema : skipOccurrenceSchema;
   const parsed = schema.safeParse(value);
   if (!parsed.success) {
     throw new Error('Choose a valid schedule and calendar date.');
@@ -36,10 +37,8 @@ export async function mutateSchedule(resource: ScheduleResource, value?: object)
     if (input.endDate && input.endDate < template.date) {
       throw new Error('The end date must be on or after the schedule start.');
     }
-    data.scheduleSettings = [
-      ...(data.scheduleSettings ?? []).filter((entry) => entry.recurringId !== input.recurringId),
-      input,
-    ];
+    const { recurringId, ...changes } = input;
+    patchDemoControls(data, recurringId, changes);
   } else {
     if (!isOccurrence(template.date, template.frequency, input.date)) {
       throw new Error('Choose a date in this recurring schedule.');
