@@ -3,6 +3,33 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.15.1 verification
+
+394 tests in forty-eight files pass.
+
+The compiled production backend was launched twice against the same new disposable migrated database with every
+VAPID variable blank. It reported enabled public-only push configuration, preserved the same identity after process
+replacement, passed SQLite readiness and shut down cleanly on SIGTERM. The private sidecar was owner-only and its
+contents were absent from captured server logs. Production frontend/backend and worker/WASM/PWA artifacts, strict
+frontend/backend/worker types, zero-warning lint, JSDoc inspection, formatting and changed component bounds pass.
+
+The regression command uses `--testTimeout=20000` for this run: two unchanged bulk-UI tests exceeded the default
+five-second test deadline in the slower executor. No production behavior or test assertion was relaxed.
+
+Automatic VAPID tests use isolated disposable SQLite/key files and real P-256 key generation. They check initial
+public-only capability, local JWT header generation, stubbed provider acceptance, private file permissions,
+restart/reopen reuse, existing-device retention, explicit-key adoption/replacement, rejection of invalid contacts
+before replacing saved keys, corrupt/missing-key protection, symlink refusal, safe failure logging and retention of
+server configuration across confirmed user-data deletion. Three separate Node processes race to initialize the
+same key file and must return the same public key without incomplete files or leftover temporary files.
+
+Frontend tests cover the new setup-failure message, refreshing capability after recovery and unchanged explicit
+browser permission behavior. Tests never contact real push providers or use a real user database. Runtime key files
+are excluded from source/Docker contexts and financial exports. The supplied Dockerfile remains byte-identical.
+
+No additional schema or dependency change. Docker/ARM64/native image behavior, browser visual checks and actual
+phone-provider delivery remain unexecuted; the hosted preview still offers foreground reminders only.
+
 ## Version 1.15 verification
 
 386 tests in forty-seven files pass. Production frontend/backend compilation, worker/WASM/service-worker artifacts,

@@ -47,8 +47,8 @@ export function PhoneNotificationHelp() {
         <li>Tap Send test notification. Enable your computer separately to receive reminders on both devices.</li>
       </ol>
       <p>
-        Keep the server running and its VAPID keys stable. OS notification settings, Focus and battery controls can
-        delay or suppress display. Notifications contain no payee names or amounts.
+        Keep the server running. OS notification settings, Focus and battery controls can delay or suppress display.
+        Notifications contain no payee names or amounts.
       </p>
       {environment.isDemo && (
         <p>

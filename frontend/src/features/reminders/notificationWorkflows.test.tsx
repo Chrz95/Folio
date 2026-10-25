@@ -126,14 +126,14 @@ describe('browser and phone setup interactions', () => {
     expect(screen.getByText(/iPhone\/iPad/)).toBeVisible();
     expect(permission).not.toHaveBeenCalled();
   });
-  it('refreshes server capability after VAPID setup without requesting permission automatically', async () => {
+  it('refreshes server capability after automatic setup recovers without requesting permission automatically', async () => {
     config.enabled = false;
     render(
       <MemoryRouter>
         <ReminderSettings />
       </MemoryRouter>,
     );
-    await screen.findByText(/Configure VAPID keys on your server/);
+    await screen.findByText(/Background notification setup failed on the server/);
     expect(screen.getByRole('button', { name: 'Enable this device' })).toBeDisabled();
     config.enabled = true;
     fireEvent.click(screen.getByRole('button', { name: 'Refresh device status' }));

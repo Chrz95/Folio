@@ -1,8 +1,37 @@
 # Folio
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q1J229F1AG)
+
 A calm, manual budget manager for everyday finances. Track income, expenses and transfers; plan bills and
 paydays; set monthly category limits; review actual spending; and see posted and upcoming payments on a calendar.
 Amounts are euros, represented internally as integer cents. There are no bank connections or third-party analytics.
+
+## Version 1.15.1: automatic background-notification setup
+
+The backend now creates its own VAPID signing keys on first startup and stores them privately beside SQLite in the
+existing data volume. With the standard path this is `/app/data/app.sqlite.vapid.json`. Restarting or replacing the
+container reuses the same identity. No key-generation command, `push.env` or VAPID environment variables are required
+for a new deployment. Upgrade normally, open Folio over trusted HTTPS and choose **Settings → Browser & phone
+notifications → Enable this device**. Browser permission remains a per-device choice.
+
+Existing explicit `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` pairs take precedence and are saved for subsequent restarts.
+Keep an existing environment-file override during the upgrade to adopt the same identity for enrolled devices.
+An optional `VAPID_SUBJECT` overrides the identity/contact URI; otherwise Folio uses a configured non-localhost HTTPS
+app origin, with a valid mailto fallback for local development. This avoids requiring a separate contact setup step.
+
+Keys are validated as a matching P-256 pair, published atomically with owner-only permissions and never returned by
+workspace exports or APIs. Concurrent first starts reuse one complete pair. Damaged saved files, or missing original
+keys when devices are already registered, disable background delivery with a safe error instead of silently rotating
+the identity. Other budget features remain available after a setup/storage failure.
+
+Keep the existing persistent volume and include the signing sidecar in server/volume backups. Financial JSON exports
+and SQLite-only backups do not contain it. Delete-all app data removes device registrations and user rows while
+retaining server signing configuration, as it does for other server configuration. The manual `push:keys` generator
+remains available only for operators who want explicit overrides.
+
+Release images are **1.15.1**. No new schema/dependency change is needed beyond the included 1.15 migration. The exact
+supplied Dockerfile, mobile improvements, automatic transaction confirmation and custom categories remain included.
+Real Docker/ARM64 and phone push-provider delivery remain unverified here.
 
 ## Version 1.15: mobile layouts, automatic confirmation and custom spending categories
 
@@ -97,7 +126,7 @@ Deletion removes every account, transaction, recurring rule, budget, goal, recei
 plus notification subscriptions, reminder preferences, snoozes, attempts and delivery/test history. It leaves a blank
 workspace, with no sample accounts restored. This browser's Folio appearance, notification state and install-prompt
 preferences are cleared, while unrelated browser storage is untouched. Browser-level notification permission and
-installation remain controlled by the browser. Server configuration/VAPID environment files and database migrations
+installation remain controlled by the browser. Server configuration, notification signing files and database migrations
 are retained. Other devices' local browser preferences are not remotely cleared.
 
 The server validates exact typed consent and acknowledgment, checks a revision including financial and notification
@@ -270,14 +299,11 @@ workspaces and foreground-only reminders. Foreground display uses service-worker
 success only after display resolves. Scheduled server Web Push continues when the page is closed, while the server runs.
 OS permissions, Focus, connectivity and battery policies can suppress display; provider acknowledgment never means read.
 
-Generate VAPID keys **once**, retain them across restarts, and set the server contact URI. The generator writes a new
-owner-only file and refuses to overwrite an existing key file; it does not print the private key:
+VAPID signing keys are initialized automatically in the existing SQLite data volume and reused across restarts.
+There is no required key-generation command or environment file. Existing explicit pairs are adopted; operators may
+still generate an optional override with `pnpm push:keys ./push.env mailto:you@example.com`.
 
-```bash
-pnpm push:keys ./push.env mailto:you@example.com
-```
-
-Load the three values into the backend deployment environment. The frontend receives only the public key. The server
+The frontend receives only the public key. The server
 needs outbound HTTPS to the browser push providers. HTTPS must terminate at your existing reverse proxy, which forwards
 to Folio's frontend; setting `PUBLIC_ORIGIN` alone does not configure TLS. The phone must trust the certificate and reach
 that HTTPS address. An ordinary `http://192.168.x.x` address cannot enable phone Web Push. Keep the existing private
@@ -297,21 +323,14 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.15.0 \
-    -t "192.168.1.11:5000/folio-${target}:1.15.0" \
+    --build-arg VERSION=1.15.1 \
+    -t "192.168.1.11:5000/folio-${target}:1.15.1" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```
 
-On the Pi, if keys have not already been configured, generate a new private file using the compiled backend image
-(no host pnpm installation required). Replace the contact address first and preserve existing configured keys:
-
-```bash
-docker run --rm --entrypoint node --user "$(id -u):$(id -g)" \
-  --volume "$PWD:/keys" \
-  192.168.1.11:5000/folio-backend:1.15.0 \
-  backend/dist/features/reminders/generatePushKeys.js /keys/push.env mailto:you@example.com
-```
+On the Pi, normal backend startup creates persistent notification signing keys automatically. No separate key
+container, manual VAPID values or `push.env` is needed. Existing explicit keys remain supported.
 
 For an existing installation, stop the old writer and take a consistent SQLite backup before upgrading. Do not remove
 volumes. Run the new registry Compose from the source directory, using the same project identity as before:
@@ -323,12 +342,13 @@ docker compose -f docker-compose.custom.yaml down
 # Set this to the real reachable HTTPS origin after configuring your reverse proxy.
 export PUBLIC_ORIGIN=https://your-folio-host.example
 
-docker compose --env-file push.env -f compose.registry.yaml pull
-docker compose --env-file push.env -f compose.registry.yaml up -d
-docker compose --env-file push.env -f compose.registry.yaml ps
+docker compose -f compose.registry.yaml pull
+docker compose -f compose.registry.yaml up -d
+docker compose -f compose.registry.yaml ps
 ```
 
-If VAPID keys are already supplied by another environment file, use that file instead of generating `push.env`.
+If you already use an environment file containing explicit keys, keep its `--env-file` option during the upgrade.
+The default deployment needs no such file.
 `FOLIO_REGISTRY`, `IMAGE_TAG`, `FRONTEND_PORT`, `BACKEND_PORT` and `PUBLIC_ORIGIN` can be overridden in the deployment
 environment. For a plain-HTTP image registry, configure the Pi Docker daemon's insecure registries separately from
 BuildKit. Docker builds, ARM64 execution and real-device push delivery are not claimed verified in this environment.
@@ -679,13 +699,9 @@ creates explicit occurrences for the next twelve months with display alarms, pre
 Import the `.ics` file into a calendar that supports alarms. Re-export after changing a schedule; imported calendars
 are independent copies, and calendar applications decide whether to honor alarms.
 
-The self-hosted backend supports Web Push while the page is closed. Configure both VAPID keys and an operator contact:
-
-```bash
-pnpm push:keys ./push.env mailto:you@example.com
-```
-
-Put the values in the untracked `.env`, restart the backend, build/serve the PWA over HTTPS, then choose **Enable this device** under Settings → Browser & phone notifications. Permission is requested only after that button action. This browser's subscription is stored
+The self-hosted backend supports Web Push while the page is closed and initializes signing keys automatically.
+Serve the PWA over trusted HTTPS, then choose **Enable this device** under Settings → Browser & phone notifications.
+Permission is requested only after that button action. This browser's subscription is stored
 in SQLite; **Disconnect this device** removes it and unsubscribes. Browser support varies; iOS requires installation for
 Web Push. No subscription is created automatically.
 
@@ -824,7 +840,7 @@ commands there. Production requires an absolute local SQLite path. Empty paths, 
 | `TEST_DATABASE_DIRECTORY`                                | `./.test-data`; isolated disposable test-owned subdirectories          |
 | `VITE_API_BASE_URL`                                      | Public build-time API prefix; relative `/api/v1` in Docker             |
 | `VITE_DEMO_MODE`                                         | false for full stack; true only for explicitly labelled preview builds |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional push configuration; keep private key secret                   |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Optional overrides; signing keys initialize automatically              |
 | `FRONTEND_PORT`, `PUBLIC_ORIGIN`                         | Container frontend 8080 and matching CORS origin                       |
 
 The application is single-user and intended for a trusted local machine or an authenticated private network. It has

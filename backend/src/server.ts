@@ -1,3 +1,4 @@
+import { configureServerPush } from './features/reminders/automaticPush.js';
 import { startAutomaticWorker } from './features/schedules/automatic.worker.js';
 import { loadEnvironment } from './app/config/environment.js';
 import { createLogger } from './lib/logger/logger.js';
@@ -16,6 +17,7 @@ try {
   process.exitCode = 1;
   throw error;
 }
+configuration.push = configureServerPush(client, configuration, logger);
 const app = createApp(client, configuration, logger);
 const server = app.listen(configuration.port, configuration.host, () => logger.info('Folio API listening'));
 const stopAutomatic = startAutomaticWorker(client, logger);

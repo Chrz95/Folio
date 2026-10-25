@@ -44,9 +44,7 @@ export async function loadNotificationStatus(): Promise<DeviceStatus> {
     hasSubscription,
     registered,
     isEnabled,
-    blocker:
-      blocker ||
-      (!configuration.enabled ? 'Configure VAPID keys on your server to enable background notifications.' : ''),
+    blocker: blocker || (!configuration.enabled ? NOTIFICATIONS.setupUnavailable : ''),
   };
 }
 /** Request permission immediately in the click handler using preloaded configuration, preserving iOS user activation.
@@ -58,7 +56,7 @@ export async function enableReminders(configuration: NotificationConfiguration) 
     throw new Error(blocker);
   }
   if (!configuration.enabled) {
-    throw new Error('Configure VAPID keys on the server first.');
+    throw new Error(NOTIFICATIONS.setupUnavailable);
   }
   const permissionPromise = Notification.requestPermission();
   if ((await permissionPromise) !== 'granted') {

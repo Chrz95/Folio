@@ -39,8 +39,8 @@ const serverSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().default(''),
   VAPID_SUBJECT: z
     .string()
-    .regex(/^(mailto:|https:\/\/)/)
-    .default('mailto:operator@example.com'),
+    .regex(/^(?:$|mailto:|https:\/\/)/)
+    .default(''),
 });
 /** Validate HTTP configuration once at process bootstrap.
  * @returns {object} Typed HTTP and push configuration. */

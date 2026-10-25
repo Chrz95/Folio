@@ -1,5 +1,6 @@
 /** Browser-specific push setup and user-visible test content. */
 export const NOTIFICATIONS = {
+  setupUnavailable: 'Background notification setup failed on the server. Check its logs and data-volume permissions.',
   workerTimeout: 10000,
   keyBase: 4,
   testTitle: 'Folio notifications are connected',

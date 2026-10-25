@@ -15,3 +15,6 @@ artifacts/
 
 # Private notification signing configuration
 push.env
+
+# Automatically persisted server signing keys (including interrupted temporary writes)
+**/*.vapid.json*

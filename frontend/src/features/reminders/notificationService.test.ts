@@ -79,7 +79,7 @@ describe('explicit per-device notification enrollment', () => {
     expect(status.isEnabled).toBe(false);
     expect(status.hasSubscription).toBe(true);
   });
-  it('explains insecure HTTP, denied permission, missing VAPID and iPhone home-screen requirements', async () => {
+  it('explains insecure HTTP, denied permission, unavailable server setup and iPhone home-screen requirements', async () => {
     vi.stubGlobal('isSecureContext', false);
     await expect(enableReminders(config)).rejects.toThrow(/HTTPS/);
     expect(permission).not.toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe('explicit per-device notification enrollment', () => {
     Object.defineProperty(Notification, 'permission', { configurable: true, value: 'denied' });
     await expect(enableReminders(config)).rejects.toThrow(/blocked/);
     Object.defineProperty(Notification, 'permission', { configurable: true, value: 'default' });
-    await expect(enableReminders({ ...config, enabled: false })).rejects.toThrow(/VAPID/);
+    await expect(enableReminders({ ...config, enabled: false })).rejects.toThrow(/setup failed on the server/);
     Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone' });
     await expect(enableReminders(config)).rejects.toThrow(/Home Screen/);
     expect(permission).not.toHaveBeenCalled();

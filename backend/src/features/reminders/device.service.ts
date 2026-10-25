@@ -34,7 +34,11 @@ export function createDeviceService(
      * @param {string} endpoint - Current registered endpoint. @returns {Promise<object>} Provider acceptance. */
     test: async (endpoint: string) => {
       if (!push.publicKey || !push.privateKey) {
-        throw new AppError(HTTP.unavailable, 'PUSH_DISABLED', 'Configure the server VAPID keys first.');
+        throw new AppError(
+          HTTP.unavailable,
+          'PUSH_DISABLED',
+          'Background notification setup is unavailable on this server.',
+        );
       }
       const subscription = repository.get(endpoint);
       if (!subscription) {

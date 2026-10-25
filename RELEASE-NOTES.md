@@ -1,3 +1,16 @@
+# Folio 1.15.1
+
+- **Automatic Web Push setup:** backend startup generates and durably stores a private VAPID identity in the existing
+  SQLite volume, reusing it across restarts/container replacement. No manual generator or push.env is required.
+- **Existing installations:** explicit pairs take precedence and are adopted into persistent storage. Invalid keys,
+  damaged files or a missing identity for enrolled devices never cause silent automatic rotation. Only background
+  delivery is disabled after a setup failure; budget features remain available.
+- **Privacy and delivery:** atomic owner-only files, matching P-256 validation, stable concurrent initialization and
+  public-key-only API responses. Existing per-device permission, trusted HTTPS and delivery controls still apply.
+- **Deployment:** 1.15.1 images; exact supplied Dockerfile retained. No additional migration or dependency change.
+
+394 tests in forty-eight files pass. See VALIDATION for executed checks and remaining limits.
+
 # Folio 1.15
 
 - **Mobile:** labelled recurring table rows and a compact sort selector keep dates, amounts and actions available.

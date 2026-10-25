@@ -1,0 +1,15 @@
+export const VAPID = {
+  suffix: '.vapid.json',
+  version: 1,
+  maximumFileBytes: 4096,
+  privateMode: 0o600,
+  publicBytes: 65,
+  privateBytes: 32,
+  curve: 'prime256v1',
+  fallbackSubject: 'mailto:operator@example.com',
+  validationAudience: 'https://push.example.com',
+  loopback: ['localhost', '127.0.0.1', '[::1]'],
+  invalidKeys: 'The server signing keys are invalid. Restore the existing key file or explicit VAPID pair.',
+  missingKeys: 'Existing notification devices require their original signing keys. Restore the server key backup.',
+  setupFailed: 'Background notification setup failed. Check data-volume permissions and the saved server signing keys.',
+} as const;
