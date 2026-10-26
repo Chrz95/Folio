@@ -1,3 +1,4 @@
+import { RECURRING_COLUMNS, SORT_DIRECTIONS } from './recurringSort.constants';
 import type { RecurringSort, SortDirection } from './recurringRows';
 interface MobileSortProps {
   sort: RecurringSort;
@@ -19,12 +20,16 @@ export function RecurringMobileSort({ sort, direction, onChange }: MobileSortPro
           onChange(next, order);
         }}
       >
-        <option value="proximity:ascending">Closest unconfirmed first</option>
-        <option value="proximity:descending">Furthest unconfirmed first</option>
-        <option value="name:ascending">Name: A to Z</option>
-        <option value="name:descending">Name: Z to A</option>
-        <option value="amount:ascending">Amount: low to high</option>
-        <option value="amount:descending">Amount: high to low</option>
+        {RECURRING_COLUMNS.flatMap((column) =>
+          SORT_DIRECTIONS.map((order) => (
+            <option
+              key={`${column.key}:${order}`}
+              value={`${column.key}:${order}`}
+            >
+              {column[order]}
+            </option>
+          )),
+        )}
       </select>
     </label>
   );

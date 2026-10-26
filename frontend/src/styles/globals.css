@@ -631,6 +631,16 @@ b {
   font-size: 0.64rem;
   margin: 14px 0 0;
 }
+/* Match header heights so overview amounts share a baseline across every card. */
+.summary-grid .summary-label {
+  min-height: 29px;
+}
+.summary-grid .summary-value {
+  line-height: 1.2;
+}
+.summary-grid .balance-footer {
+  margin-top: 14px;
+}
 .metric-icon {
   height: 29px;
   width: 29px;

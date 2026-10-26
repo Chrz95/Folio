@@ -157,6 +157,91 @@ describe('calendar states and default recurring table', () => {
     expect(readDemo().scheduleSettings?.[0]?.isPaused).toBe(true);
     expect(readDemo().skippedOccurrences).toHaveLength(1);
   });
+  it('shows remaining counts and updates them after confirming or skipping an occurrence', async () => {
+    const data = fixture();
+    data.recurring = [{ ...rule(1, 'Installments', '2026-10-17'), frequency: 'monthly' }];
+    data.scheduleSettings = [{ recurringId: data.recurring[0]!.id, isPaused: false, endDate: '2026-12-17' }];
+    writeDemo(data);
+    render(
+      <Harness>
+        <RecurringPage />
+      </Harness>,
+    );
+    const table = await screen.findByRole('table', { name: 'Recurring transactions' });
+    expect(within(table).getByRole('columnheader', { name: 'Remaining unconfirmed' })).toBeInTheDocument();
+    const remaining = () => table.querySelector('td[data-label="Remaining unconfirmed"]');
+    expect(remaining()).toHaveTextContent('3');
+    fireEvent.click(screen.getByRole('button', { name: 'Mark paid' }));
+    await waitFor(() => expect(remaining()).toHaveTextContent('2'));
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this occurrence' }));
+    await waitFor(() => expect(remaining()).toHaveTextContent('1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark paid' }));
+    await waitFor(() => expect(remaining()).toHaveTextContent('0'));
+    expect(readDemo().transactions).toHaveLength(2);
+  });
+  it('toggles every new column sort and shares all choices with the mobile selector', async () => {
+    const data = fixture();
+    data.recurring = [
+      rule(1, 'Alpha', '2026-10-16'),
+      { ...rule(2, 'Beta', '2026-10-18'), frequency: 'monthly' },
+      { ...rule(3, 'Gamma', '2026-10-17'), frequency: 'weekly' },
+      { ...rule(4, 'Delta', '2026-10-19'), frequency: 'yearly' },
+    ];
+    data.scheduleSettings = [
+      { recurringId: data.recurring[1]!.id, isPaused: false, endDate: '2027-07-18' },
+      { recurringId: data.recurring[2]!.id, isPaused: true, endDate: '2026-10-24' },
+    ];
+    writeDemo(data);
+    render(
+      <Harness>
+        <RecurringPage />
+      </Harness>,
+    );
+    const table = await screen.findByRole('table', { name: 'Recurring transactions' });
+    const names = () =>
+      within(table)
+        .getAllByRole('rowheader')
+        .map((cell) => cell.querySelector('strong')!.textContent);
+    const sorts = [
+      {
+        label: 'Frequency',
+        ascending: ['Alpha', 'Gamma', 'Beta', 'Delta'],
+        descending: ['Delta', 'Beta', 'Gamma', 'Alpha'],
+      },
+      {
+        label: 'Remaining unconfirmed',
+        ascending: ['Alpha', 'Gamma', 'Beta', 'Delta'],
+        descending: ['Beta', 'Gamma', 'Alpha', 'Delta'],
+      },
+      {
+        label: 'Status',
+        ascending: ['Alpha', 'Gamma', 'Beta', 'Delta'],
+        descending: ['Beta', 'Delta', 'Gamma', 'Alpha'],
+      },
+    ];
+    for (const sort of sorts) {
+      const header = within(table).getByRole('columnheader', { name: new RegExp(sort.label) });
+      fireEvent.click(within(header).getByRole('button'));
+      expect(header).toHaveAttribute('aria-sort', 'ascending');
+      expect(names()).toEqual(sort.ascending);
+      fireEvent.click(within(header).getByRole('button'));
+      expect(header).toHaveAttribute('aria-sort', 'descending');
+      expect(names()).toEqual(sort.descending);
+    }
+    const unlimited = within(table).getByLabelText('Infinite unconfirmed transactions');
+    expect(unlimited).toHaveTextContent('∞');
+    expect(unlimited.closest('tr')).toHaveTextContent('Delta');
+    const selector = screen.getByLabelText('Sort recurring transactions');
+    expect(within(selector).getAllByRole('option')).toHaveLength(12);
+    fireEvent.change(selector, { target: { value: 'remaining:descending' } });
+    expect(names()).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta']);
+    expect(within(table).getByRole('columnheader', { name: /Remaining unconfirmed/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    expect(within(table).getByRole('columnheader', { name: 'Status' })).toHaveAttribute('aria-sort', 'none');
+    expect(readDemo().transactions).toHaveLength(0);
+  });
   it('defaults to the nearest table, supports sorting and retains cards with type labels', async () => {
     const data = fixture();
     data.recurring = [

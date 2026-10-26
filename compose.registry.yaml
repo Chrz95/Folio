@@ -2,7 +2,7 @@
 # The registry image tags must have been built and pushed for this release.
 services:
   migrate:
-    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-migrate:${IMAGE_TAG:-1.15.1}
+    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-migrate:${IMAGE_TAG:-1.15.4}
     platform: linux/arm64
     restart: 'no'
     read_only: true
@@ -13,7 +13,7 @@ services:
       DATABASE_FILE_PATH: /app/data/app.sqlite
     volumes: [sqlite-data:/app/data]
   backend:
-    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-backend:${IMAGE_TAG:-1.15.1}
+    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-backend:${IMAGE_TAG:-1.15.4}
     platform: linux/arm64
     restart: unless-stopped
     init: true
@@ -35,7 +35,7 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     volumes: [sqlite-data:/app/data]
   frontend:
-    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-frontend:${IMAGE_TAG:-1.15.1}
+    image: ${FOLIO_REGISTRY:-192.168.1.11:5000}/folio-frontend:${IMAGE_TAG:-1.15.4}
     platform: linux/arm64
     restart: unless-stopped
     read_only: true

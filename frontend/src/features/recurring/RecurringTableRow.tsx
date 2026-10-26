@@ -37,6 +37,9 @@ export function RecurringTableRow({ row, today }: { row: RecurringRow; today: st
         )}
         {endDate && <small>Ends {formatDate(endDate, { day: 'numeric', month: 'short', year: 'numeric' })}</small>}
       </td>
+      <td data-label="Remaining unconfirmed">
+        {row.remaining === null ? <span aria-label="Infinite unconfirmed transactions">∞</span> : row.remaining}
+      </td>
       <td data-label="Status">
         {status && <span className={`payment-status ${status}`}>{PAYMENT_LABEL[status]}</span>}
         {isPaused && <span className="recurring-pause">Paused</span>}

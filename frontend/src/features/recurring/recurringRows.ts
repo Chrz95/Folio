@@ -1,12 +1,17 @@
 import type { BudgetData, Occurrence, RecurringTransaction } from '../../types/budget';
+import { FREQUENCY_ORDER } from './recurringSort.constants';
+import type { RecurringSort } from './recurringSort.constants';
+import { recurringStatusLabel } from './recurringStatus';
 import { displayOccurrences } from '../calendar/calendarEntries';
 import { occurrenceDate } from '../transactions/recurrence';
-export type RecurringSort = 'proximity' | 'name' | 'amount';
+export type { RecurringSort } from './recurringSort.constants';
 export type SortDirection = 'ascending' | 'descending';
 export interface RecurringRow {
   template: RecurringTransaction;
   closest?: Occurrence;
   overdue: number;
+  /** Unpaid, unskipped dates through the ending; null for an ongoing series. */
+  remaining: number | null;
   isPaused: boolean;
   endDate: string | null;
 }
@@ -27,7 +32,8 @@ export function recurringRows(data: BudgetData, today: string): RecurringRow[] {
   const horizon = occurrenceDate(today, 'yearly', 1);
   return data.recurring.map((template) => {
     const settings = data.scheduleSettings?.find((row) => row.recurringId === template.id);
-    const to = template.date > horizon ? template.date : horizon;
+    const ending = settings?.endDate ?? (template.frequency === 'once' ? template.date : null);
+    const to = ending ?? (template.date > horizon ? template.date : horizon);
     const unpaid = displayOccurrences({ ...data, recurring: [template] }, template.date, to).filter(
       (row) => !row.isPaid,
     );
@@ -39,12 +45,13 @@ export function recurringRows(data: BudgetData, today: string): RecurringRow[] {
       template,
       closest,
       overdue: unpaid.filter((row) => row.date < today).length,
+      remaining: ending ? unpaid.length : null,
       isPaused: settings?.isPaused ?? false,
       endDate: settings?.endDate ?? null,
     };
   });
 }
-/** Sort copies without changing persisted data. Rules without unpaid dates sort last by proximity.
+/** Sort copies without changing persisted data. Missing dates and ongoing counts stay last; status prioritizes pause.
  * @param {RecurringRow[]} rows - Management rows. @param {string} today - Distance anchor.
  * @param {RecurringSort} sort - Column. @param {SortDirection} direction - Direction.
  * @returns {RecurringRow[]} Stable display order. */
@@ -58,14 +65,18 @@ export function sortRecurringRows(
     if (sort === 'proximity' && Boolean(a.closest) !== Boolean(b.closest)) {
       return a.closest ? -1 : 1;
     }
-    const order =
-      sort === 'amount'
-        ? a.template.amount - b.template.amount
-        : sort === 'name'
-          ? a.template.name.localeCompare(b.template.name)
-          : a.closest && b.closest
-            ? compareProximity(a.closest.date, b.closest.date, today)
-            : 0;
+    if (sort === 'remaining' && (a.remaining === null) !== (b.remaining === null)) {
+      return a.remaining === null ? 1 : -1;
+    }
+    const comparisons: Record<RecurringSort, () => number> = {
+      amount: () => a.template.amount - b.template.amount,
+      name: () => a.template.name.localeCompare(b.template.name),
+      frequency: () => FREQUENCY_ORDER[a.template.frequency] - FREQUENCY_ORDER[b.template.frequency],
+      remaining: () => (a.remaining ?? 0) - (b.remaining ?? 0),
+      status: () => recurringStatusLabel(a, today).localeCompare(recurringStatusLabel(b, today)),
+      proximity: () => (a.closest && b.closest ? compareProximity(a.closest.date, b.closest.date, today) : 0),
+    };
+    const order = comparisons[sort]();
     return (
       (direction === 'descending' ? -order : order) ||
       a.template.name.localeCompare(b.template.name) ||

@@ -34,7 +34,7 @@ Manage subscriptions, rent, installments, salary and other scheduled payments al
 - Confirm a payment manually, skip an occurrence, restore skipped dates, or pause a schedule.
 - Enable **automatic confirmation on the due date** for individual schedules.
 - Use the default sortable **table view**, ordered by the unconfirmed occurrence closest to today,
-  or switch to cards. On mobile, table rows become labelled, stacked entries.
+  or switch to cards. Sort every data column in either direction, including frequency, remaining count and status. See the **remaining unconfirmed count** for each finite schedule, or **∞** for one with no end date or repetition limit. On mobile, table rows become labelled, stacked entries.
 
 Automatic confirmation records a transaction in your ledger. It does not initiate a bank payment.
 
@@ -43,11 +43,11 @@ Automatic confirmation records a transaction in your ledger. It does not initiat
 View recorded transactions and each recurring occurrence together in a monthly calendar.
 Select a day to see its agenda and manage planned payments.
 
-| Color | Meaning |
-| --- | --- |
+| Color     | Meaning                                |
+| --------- | -------------------------------------- |
 | 🟠 Orange | Unconfirmed payment due today or later |
-| 🔴 Red | Overdue, unconfirmed payment |
-| 🟢 Green | Confirmed, recorded transaction |
+| 🔴 Red    | Overdue, unconfirmed payment           |
+| 🟢 Green  | Confirmed, recorded transaction        |
 
 Status labels accompany the colors. Upcoming plans affect forecasts; they change account balances when recorded.
 
@@ -162,11 +162,11 @@ Open **http://localhost:5173**, add an account in Settings, and start recording 
 
 ## Documentation
 
-| Guide | Contents |
-| --- | --- |
+| Guide                                      | Contents                                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | [Setup and operations](docs/OPERATIONS.md) | Configuration, Docker and Raspberry Pi deployment, backups, API, reminders and development conventions |
-| [Release notes](RELEASE-NOTES.md) | Release history and upgrade information |
-| [Validation](VALIDATION.md) | Completed checks and remaining verification gaps |
+| [Release notes](RELEASE-NOTES.md)          | Release history and upgrade information                                                                |
+| [Validation](VALIDATION.md)                | Completed checks and remaining verification gaps                                                       |
 
 The browser-only demo uses a separate local workspace with sample data and foreground reminders.
 Deploy the full backend for shared access to your own workspace and background notifications.

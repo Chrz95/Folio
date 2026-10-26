@@ -122,6 +122,65 @@ describe('confirmation calendar and recurring proximity', () => {
     data.transactions = [posted('2026-10-17', 'Annual')];
     expect(recurringRows(data, '2026-10-17')[0]!.closest!.date).toBe('2027-10-17');
   });
+  it('counts the entire finite series beyond the proximity horizon, excluding paid and skipped dates while paused', () => {
+    const data = fixture();
+    data.recurring = [{ ...rule('Installments', '2026-01-31'), frequency: 'monthly' }];
+    data.scheduleSettings = [{ recurringId: 'Installments', isPaused: true, endDate: '2029-01-31' }];
+    data.transactions = [posted('2026-01-31', 'Installments')];
+    data.skippedOccurrences = [{ recurringId: 'Installments', date: '2026-02-28' }];
+    const before = structuredClone(data);
+    const row = recurringRows(data, '2026-10-17')[0]!;
+    expect(row.remaining).toBe(35);
+    expect(row.overdue).toBe(7);
+    expect(data).toEqual(before);
+  });
+  it('counts once-only, completed, off-pattern endings and overdue dates without hiding paused payments', () => {
+    const data = fixture();
+    data.recurring = [rule('Once', '2026-01-01')];
+    expect(recurringRows(data, '2026-10-17')[0]!.remaining).toBe(1);
+    data.transactions = [posted('2026-01-01', 'Once')];
+    expect(recurringRows(data, '2026-10-17')[0]!.remaining).toBe(0);
+    data.recurring = [{ ...rule('Finite', '2026-01-31'), frequency: 'monthly' }];
+    data.scheduleSettings = [{ recurringId: 'Finite', isPaused: false, endDate: '2026-03-15' }];
+    expect(recurringRows(data, '2026-10-17')[0]!.remaining).toBe(2);
+    data.skippedOccurrences = [
+      { recurringId: 'Finite', date: '2026-01-31' },
+      { recurringId: 'Finite', date: '2026-02-28' },
+    ];
+    expect(recurringRows(data, '2026-10-17')[0]!.remaining).toBe(0);
+  });
+  it('labels unbounded recurrence as ongoing instead of presenting the display horizon as a total', () => {
+    const data = fixture();
+    data.recurring = [{ ...rule('Ongoing', '2026-10-17'), frequency: 'monthly' }];
+    expect(recurringRows(data, '2026-10-17')[0]!.remaining).toBeNull();
+  });
+  it('sorts frequencies by cadence, keeps ongoing counts last in both directions and prioritizes paused status', () => {
+    const data = fixture();
+    data.recurring = [
+      rule('Once', '2026-10-16'),
+      { ...rule('Monthly', '2026-10-18'), frequency: 'monthly' },
+      { ...rule('Weekly', '2026-10-17'), frequency: 'weekly' },
+      { ...rule('Annual', '2026-10-19'), frequency: 'yearly' },
+    ];
+    data.scheduleSettings = [
+      { recurringId: 'Monthly', isPaused: false, endDate: '2027-07-18' },
+      { recurringId: 'Weekly', isPaused: true, endDate: '2026-10-24' },
+    ];
+    const rows = recurringRows(data, '2026-10-17');
+    const before = structuredClone(rows);
+    const ordered = (sort: Parameters<typeof sortRecurringRows>[2], direction: 'ascending' | 'descending') =>
+      sortRecurringRows(rows, '2026-10-17', sort, direction).map((row) => row.template.name);
+    expect(ordered('frequency', 'ascending')).toEqual(['Once', 'Weekly', 'Monthly', 'Annual']);
+    expect(ordered('frequency', 'descending')).toEqual(['Annual', 'Monthly', 'Weekly', 'Once']);
+    expect(ordered('remaining', 'ascending')).toEqual(['Once', 'Weekly', 'Monthly', 'Annual']);
+    expect(ordered('remaining', 'descending')).toEqual(['Monthly', 'Weekly', 'Once', 'Annual']);
+    expect(ordered('status', 'ascending')).toEqual(['Once', 'Weekly', 'Annual', 'Monthly']);
+    expect(ordered('status', 'descending')).toEqual(['Annual', 'Monthly', 'Weekly', 'Once']);
+    data.transactions = [posted('2026-10-16', 'Once')];
+    const completed = recurringRows(data, '2026-10-17');
+    expect(sortRecurringRows(completed, '2026-10-17', 'status', 'ascending')[0]!.template.name).toBe('Once');
+    expect(rows).toEqual(before);
+  });
   it('uses civil-day proximity over DST changes and supports name/amount sorting without changing source order', () => {
     expect(compareProximity('2026-10-24', '2026-10-26', '2026-10-25')).toBeLessThan(0);
     const data = fixture();

@@ -1,3 +1,4 @@
+import { RECURRING_COLUMNS } from './recurringSort.constants';
 import { RecurringMobileSort } from './RecurringMobileSort';
 import { useState } from 'react';
 import type { RecurringRow, RecurringSort, SortDirection } from './recurringRows';
@@ -30,36 +31,22 @@ export function RecurringTable({ rows, today }: { rows: RecurringRow[]; today: s
         aria-label="Recurring transactions"
       >
         <caption>
-          One row per schedule. The closest unconfirmed occurrence is shown; all dates appear in Calendar.
+          Remaining counts include overdue dates and exclude confirmed or skipped dates. ∞ means no end date or
+          repetition limit.
         </caption>
         <thead>
           <tr>
-            <th
-              scope="col"
-              aria-sort={sort === 'name' ? direction : 'none'}
-            >
-              <button onClick={() => changeSort('name')}>
-                Name {sort === 'name' ? (direction === 'ascending' ? '↑' : '↓') : ''}
-              </button>
-            </th>
-            <th
-              scope="col"
-              aria-sort={sort === 'amount' ? direction : 'none'}
-            >
-              <button onClick={() => changeSort('amount')}>
-                Amount {sort === 'amount' ? (direction === 'ascending' ? '↑' : '↓') : ''}
-              </button>
-            </th>
-            <th scope="col">Frequency</th>
-            <th
-              scope="col"
-              aria-sort={sort === 'proximity' ? direction : 'none'}
-            >
-              <button onClick={() => changeSort('proximity')}>
-                Closest unconfirmed {sort === 'proximity' ? (direction === 'ascending' ? '↑' : '↓') : ''}
-              </button>
-            </th>
-            <th scope="col">Status</th>
+            {RECURRING_COLUMNS.map((column) => (
+              <th
+                key={column.key}
+                scope="col"
+                aria-sort={sort === column.key ? direction : 'none'}
+              >
+                <button onClick={() => changeSort(column.key)}>
+                  {column.label} {sort === column.key ? (direction === 'ascending' ? '↑' : '↓') : ''}
+                </button>
+              </th>
+            ))}
             <th scope="col">Actions</th>
           </tr>
         </thead>

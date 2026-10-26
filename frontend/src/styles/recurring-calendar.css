@@ -124,10 +124,18 @@
 .recurring-table thead th {
   padding-top: 8px;
   padding-bottom: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+  line-height: 1.5;
 }
 .recurring-table thead button {
+  display: inline-flex;
+  align-items: center;
   text-align: left;
   padding: 0;
+  line-height: inherit;
+  font: inherit;
+  white-space: nowrap;
 }
 .recurring-table th[scope='row'] {
   min-width: 190px;

@@ -1,3 +1,30 @@
+# Folio 1.15.4
+
+- **Remaining unconfirmed:** finite schedules show their unpaid, unskipped count (including zero); unlimited schedules
+  show **∞** with an accessible spoken label. A defined end date or repetition count keeps the numeric count.
+  The table caption and mobile sort choices explain the symbol. Existing count calculations and sorting are retained.
+- **Deployment:** 1.15.4 images; no migration or dependency changes. Supplied Dockerfile retained.
+
+# Folio 1.15.3
+
+- **Recurring sorting:** all six data columns sort in both directions, with matching mobile choices and accessible
+  sort indicators. Frequency uses cadence order (once, weekly, monthly, yearly), remaining uses numeric order with
+  ongoing schedules last in both directions, and status uses alphabetical order with pause taking priority.
+  Name and ID break ties consistently. Actions remain management controls rather than a data sort.
+- **Overview:** consistent summary-header heights and amount line heights align monetary values across the cards,
+  with a matching gap before the balance footer. Reports keep their existing layout.
+- **Deployment:** 1.15.3 images; no new dependencies or migrations. Supplied Dockerfile retained.
+
+# Folio 1.15.2
+
+- **Recurring table:** column headers share a centered vertical alignment and stay on a single horizontal line.
+- **Remaining unconfirmed:** a new column counts unpaid, unskipped dates across a finite schedule's full ending,
+  including overdue dates and paused schedules. Completed schedules show zero; schedules without an ending show
+  Ongoing. The count updates after confirmations, skips and schedule edits, including automatic confirmation refreshes.
+- **Mobile:** the count appears as another labelled row in the existing responsive table layout.
+- **Documentation:** the GitHub README presents current capabilities and links to the detailed operations guide.
+- **Deployment:** 1.15.2 images; no schema or dependency changes. Supplied Dockerfile retained.
+
 # Folio 1.15.1
 
 - **Automatic Web Push setup:** backend startup generates and durably stores a private VAPID identity in the existing

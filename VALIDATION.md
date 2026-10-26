@@ -3,6 +3,37 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.15.4 verification
+
+The 23 focused recurring logic/UI tests pass, including the accessible infinity symbol on the corresponding unlimited
+schedule, finite counts, completed schedules and both sort directions. Frontend strict types and changed-file
+formatting pass. Count calculations and persistence are unchanged. Browser visuals remain unverified because the
+managed preview daemon was unavailable in the preceding check. No backend, dependency, schema or Dockerfile change.
+
+## Version 1.15.3 verification
+
+Verified on 26 October 2026 with Node 24.22.1 and pnpm 11.25.0. The 32 focused tests across recurring logic/UI,
+automatic-confirmation workflows and overview calculations pass. New coverage verifies natural frequency sorting,
+numeric counts (including 2 versus 10), ongoing counts last in both directions, paused/overdue/complete status groups,
+consistent tie ordering, desktop ascending/descending header controls, and all twelve matching mobile choices.
+Production frontend/backend compilation, worker/WASM/PWA artifact checks, frontend strict types, formatting and
+zero-warning lint pass. The overview CSS change matches header heights and amount line
+heights without changing financial calculations. The managed preview daemon remains unavailable, so actual desktop,
+mobile and card-baseline visual verification is not claimed. Backend tests were not rerun for this frontend change.
+
+## Version 1.15.2 verification
+
+Verified on 26 October 2026 with Node 24.22.1 and pnpm 11.25.0 (the project engine remains 24.19.x).
+The 21 focused recurring/calendar logic and UI tests pass, including full finite-series counts beyond a year,
+paid/skipped exclusions, overdue and paused dates, completed and once-only rules, ongoing series, and live count
+updates after confirmation and skipping. Strict frontend/backend/worker types and zero-warning lint pass.
+Production frontend/backend compilation and manifest/worker/WASM artifact checks pass.
+
+The preview daemon mailbox is unavailable, so desktop header alignment and mobile visuals were not browser-verified.
+Native SQLite installation failed on this executor while extracting Node headers with an fchown error; dependency
+installation for static builds completed with scripts disabled. The full backend regression suite was not rerun.
+Docker/ARM64 execution and real-device push remain unverified. No application dependency, schema or Dockerfile changed.
+
 ## Version 1.15.1 verification
 
 394 tests in forty-eight files pass.
