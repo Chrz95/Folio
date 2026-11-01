@@ -4,6 +4,7 @@ import { useWorkspace } from '../../app/WorkspaceContext';
 import { accountBalance } from '../overview/statistics';
 import { money } from '../../utils/format';
 import { VALUE } from '../../constants/app.constants';
+import { AccountActions } from '../accounts/AccountActions';
 /** Add real manual accounts with opening balances and show their current balances.
  * @returns {JSX.Element} Account management panel. */
 export function AccountsSettings() {
@@ -14,6 +15,7 @@ export function AccountsSettings() {
     <section className="panel settings-panel">
       <h2>Your accounts</h2>
       <p>Manual accounts keep you in control. All amounts are in euros.</p>
+      <AccountActions />
       {data.accounts.map((account) => (
         <div
           className="settings-account"
@@ -21,7 +23,13 @@ export function AccountsSettings() {
         >
           <Landmark size={18} />
           <span>{account.name}</span>
-          <strong>{money(accountBalance(data, account.id))}</strong>
+          <strong className={accountBalance(data, account.id) < 0 ? 'negative' : ''}>
+            {money(accountBalance(data, account.id))}
+          </strong>
+          <AccountActions
+            accountId={account.id}
+            repaymentOnly
+          />
         </div>
       ))}
       <form

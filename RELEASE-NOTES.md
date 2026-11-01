@@ -1,3 +1,33 @@
+# Folio 1.16.2
+
+- **Search spacing:** the account/transaction search field now uses a shared bordered control with separate icon
+  and text columns. The icon is 18px wide, with a fixed 10px gap before the placeholder or entered text and 12px
+  outer padding. Both elements stay vertically centered without absolute positioning or an overlaid icon.
+  A shared focus ring preserves keyboard visibility, and the text column shrinks on narrow screens.
+- **Deployment:** 1.16.2 images; no dependency, schema or migration changes.
+
+# Folio 1.16.1
+
+- **Account search field:** the search-specific padding now takes precedence over the shared input padding,
+  reserving space for the icon to the left of both the placeholder and entered text. The icon remains vertically
+  centered. This applies to account-filtered and general transaction views.
+- **Deployment:** 1.16.1 images; no dependency, schema or migration changes.
+
+# Folio 1.16.0
+
+- **Account transfers:** dedicated Transfer money actions on Transactions, individual account views and Settings.
+  Choose two accounts, enter an amount/date and optional notes, and review both balances before confirmation.
+  Swap accounts to reverse the direction. One transfer record updates both account balances and remains excluded
+  from income and expense totals.
+- **Negative balances:** accounts below zero expose Pay negative balance, prefilled with the full current debt,
+  including recorded transactions. Choose the paying account and adjust the amount if needed. Opening balances
+  and existing payments stay unchanged. Transfers record movements in Folio; bank payments are made separately.
+- **Save handling:** duplicate submits are blocked while saving. Failed writes retain the form, and a successful
+  write followed by a failed refresh cannot be submitted again from the same dialog.
+- **Search alignment:** the Search transactions field explicitly uses a horizontal label layout and vertically
+  centers its non-interactive icon on desktop and mobile.
+- **Deployment:** 1.16.0 images; no schema, migration or dependency changes. Supplied Dockerfile retained.
+
 # Folio 1.15.4
 
 - **Remaining unconfirmed:** finite schedules show their unpaid, unskipped count (including zero); unlimited schedules

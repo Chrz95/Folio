@@ -1,0 +1,96 @@
+.account-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.page-content > .account-actions {
+  margin-bottom: 20px;
+}
+.account-actions > small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+.account-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.account-overview h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.account-overview strong {
+  display: block;
+  font-size: 1.5rem;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.settings-account {
+  flex-wrap: wrap;
+}
+.transfer-swap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+}
+.transfer-explanation {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.transfer-preview {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--hover);
+}
+.transfer-preview h3 {
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.transfer-preview dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.transfer-preview dl > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 0.8rem;
+}
+.transfer-preview dt {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.transfer-preview dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.transfer-preview p {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin: 14px 0 0;
+}
+@media (max-width: 599px) {
+  .account-overview > div,
+  .account-overview .account-actions {
+    width: 100%;
+    min-width: 0;
+  }
+  .account-actions > .button {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .settings-account > .account-actions {
+    flex-basis: 100%;
+  }
+}

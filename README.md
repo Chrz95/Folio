@@ -18,6 +18,9 @@ Built for desktop and mobile, with a calendar for upcoming payments and a clear 
 ### Track everyday finances
 
 - Record **income, expenses and transfers** across multiple accounts.
+- Use **Transfer money** on the Transactions or Settings screen, with a preview of both account balances.
+- Use **Pay negative balance** on an account to fill in its current debt and choose another account to pay from.
+  Transfers update both accounts without counting as income or spending; they record movements in Folio rather than initiating bank payments.
 - Search transactions and filter by month, account and transaction type.
 - Create your own spending categories, duplicate transactions and use recent merchant suggestions.
 - Attach **PNG, JPEG or PDF receipts** to saved transactions.

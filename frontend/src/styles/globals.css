@@ -1159,20 +1159,38 @@ progress.over-budget {
   padding: 20px;
 }
 .search-field {
-  position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 10px;
   align-items: center;
+  padding-inline: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--muted);
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 240px;
+  min-width: 0;
 }
 .search-field > svg {
-  position: absolute;
-  left: 13px;
+  display: block;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
 }
-.search-field input {
+/* Share one border and focus ring; the icon occupies its own column rather than overlapping the input. */
+.search-field > input:not([type='checkbox']):not([type='radio']) {
   width: 100%;
-  padding-left: 39px;
+  min-width: 0;
+  min-height: calc(var(--touch) - 2px);
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+}
+.search-field:focus-within {
+  outline: 2px solid #7e9d6d;
+  outline-offset: 1px;
 }
 .filter-select {
   display: flex;

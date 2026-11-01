@@ -7,6 +7,8 @@ import { MonthPicker } from '../components/ui/MonthPicker';
 import { BulkTransactions } from '../features/bulk/BulkTransactions';
 import { monthTransactions, statistics } from '../features/overview/statistics';
 import { money } from '../utils/format';
+import { accountBalance } from '../features/overview/statistics';
+import { AccountActions } from '../features/accounts/AccountActions';
 /** Filter and export the selected month's actual ledger.
  * @returns {JSX.Element} Transaction management route. */
 export default function TransactionsPage() {
@@ -16,6 +18,8 @@ export default function TransactionsPage() {
   const [parameters, setParameters] = useSearchParams();
   const accountId = parameters.get('account') ?? '';
   const category = parameters.get('category') ?? '';
+  const account = data.accounts.find((entry) => entry.id === accountId);
+  const balance = account ? accountBalance(data, account.id) : 0;
   /** Update one bookmarkable scope without discarding the other. @param {string} key - Query key.
    * @param {string} value - Selection. @returns {void} New query parameters. */
   function changeScope(key: string, value: string) {
@@ -49,6 +53,24 @@ export default function TransactionsPage() {
         </div>
         <MonthPicker />
       </div>
+      {account ? (
+        <section
+          className="panel account-overview"
+          aria-label={`${account.name} account`}
+        >
+          <div>
+            <h2>{account.name}</h2>
+            <span className="muted">Current balance</span>
+            <strong className={balance < 0 ? 'negative' : ''}>{money(balance)}</strong>
+          </div>
+          <AccountActions
+            key={account.id}
+            accountId={account.id}
+          />
+        </section>
+      ) : (
+        <AccountActions />
+      )}
       <div className="ledger-totals">
         <span>{transactions.length} transactions</span>
         <span>

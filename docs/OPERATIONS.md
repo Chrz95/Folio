@@ -440,8 +440,8 @@ From the source root, using your previously configured Buildx builder:
 ```bash
 for target in frontend backend migrate; do
   docker buildx build --platform linux/arm64 --target "$target" \
-    --build-arg VERSION=1.15.4 \
-    -t "192.168.1.11:5000/folio-${target}:1.15.4" \
+    --build-arg VERSION=1.16.2 \
+    -t "192.168.1.11:5000/folio-${target}:1.16.2" \
     -t "192.168.1.11:5000/folio-${target}:latest" --push .
 done
 ```

@@ -3,6 +3,40 @@
 Verified on 17 October 2026 with Node 24.19.0 and pnpm 11.25.0. No unexecuted container or browser audit is reported as
 passing. The full application and the hosted preview have different deployment/persistence boundaries, as below.
 
+## Version 1.16.2 verification
+
+The search layout uses a normal-flow CSS grid with an 18px icon column and 10px gap, instead of relying on
+absolute positioning and input padding. The input has no separate border, and the wrapper provides a shared
+keyboard focus ring. Account search filtering and the existing account/transfer workflow tests pass. Changed-file
+formatting and whitespace checks pass. Browser visual verification is blocked by the private app's sign-in page;
+the local preview daemon is also unavailable. No financial logic or persistence behavior changed.
+
+## Version 1.16.1 verification
+
+The 17 account/transfer interaction and validation tests pass, including search filtering on the scoped account
+page. A DOM computed-style check confirms the search icon starts at 13px with a 17px width, and the input text
+starts at 39px, leaving a 9px gap. The stronger search input selector now outranks the shared input padding rule.
+Changed-file formatting and whitespace checks pass. Desktop/mobile browser visuals remain unverified because the
+managed preview daemon is unavailable. No financial logic, backend or persistence behavior changed.
+
+## Version 1.16.0 verification
+
+Verified on 1 November 2026 with Node 24.22.1 and pnpm 11.25.0 (the declared engine remains 24.19.x).
+All **417 tests in 49 files** pass with the documented database path configured and a 15-second test timeout.
+The 17 new transfer workflow/validation cases cover the full current negative balance, both account views,
+persisted integer cents, reverse transfers, unchanged total funds and spending, cancellation, unavailable accounts,
+invalid amounts and dates, failed writes, repeated submissions and successful writes followed by failed refreshes.
+
+Frontend/backend/worker strict types, production frontend/backend compilation, changed-file formatting,
+whitespace checks and PWA/worker/WASM artifact verification pass. A compiled API check used a disposable fictional
+SQLite ledger: the exact form payload paid a negative balance to zero, preserved the combined balance, stayed out
+of income/expense totals, and persisted as one transfer after reopening. Invalid or identical accounts were rejected
+without adding partial records. The disposable database was removed afterward.
+
+The managed preview daemon is unavailable, so desktop/mobile visual alignment and layout remain unverified in a
+browser. Docker/ARM64 execution and real-device push were not exercised. No backend source, schema, migration,
+dependency or Dockerfile change was needed.
+
 ## Version 1.15.4 verification
 
 The 23 focused recurring logic/UI tests pass, including the accessible infinity symbol on the corresponding unlimited

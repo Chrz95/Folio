@@ -38,7 +38,10 @@ export function TransactionFilters({
   return (
     <div className="filter-bar">
       <label className="search-field">
-        <Search size={17} />
+        <Search
+          size={17}
+          aria-hidden="true"
+        />
         <input
           aria-label="Search transactions"
           placeholder="Search transactions…"
